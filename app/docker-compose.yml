@@ -1,0 +1,51 @@
+# docker-compose.yml
+
+services:
+  # MySQL Database Service
+  mysql_db:
+    image: mysql:8.0
+    container_name: mysql_db_container
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 'ligauk_password'
+      MYSQL_DATABASE: 'ligauk_db'
+      MYSQL_USER: 'ligauk_user'
+      MYSQL_PASSWORD: 'ligauk_password'
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # Redis Service for Socket.IO Adapter
+  redis_db:
+    image: redis:7-alpine
+    container_name: redis_db_container
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Node.js Application Service
+  app:
+    build: .
+    container_name: app_container
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql_db
+      - redis_db
+    environment:
+      DATABASE_URL: mysql://ligauk_user:ligauk_password@mysql_db:3306/ligauk_db
+      SESSION_SECRET: 'a-very-strong-and-secret-key-for-sessions'
+      REDIS_HOST: 'redis_db'
+      REDIS_PORT: 6379
+    volumes:
+      - app_uploads:/usr/src/app/public/uploads
+    entrypoint: ["/usr/local/bin/wait-for-it.sh", "redis_db:6379", "--", "/usr/local/bin/wait-for-it.sh", "mysql_db:3306", "--", "pm2-runtime", "app.js", "-i", "max"]
+
+volumes:
+  mysql_data:
+  redis_data:
+  app_uploads:

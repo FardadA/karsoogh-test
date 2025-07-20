@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>پنل ادمین</title>
+  <script src="https://cdn.jsdelivr.net/gh/arielf/soundtouch-js/script/soundtouch.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/arielf/soundtouch-js/script/soundtouch.min.js"></script>
+  <style>
+    .content-section { opacity:0; display:none; transition:opacity .3s ease }
+    .content-section.active { display:block; opacity:1 }
+    .fade-in  { opacity:1!important }
+    .fade-out { opacity:0!important }
+    .alert-box { display:flex; align-items:center; padding:10px; border-radius:5px; margin-bottom:10px; opacity:0; transition:opacity .5s ease-out }
+    .alert-box.show { opacity:1 }
+    
+    .compact-table th, .compact-table td {
+        padding: 4px 6px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    .compact-table .input-field {
+        font-size: 0.8rem;
+        padding: 3px 5px;
+    }
+    .compact-table .btn-primary, .compact-table .btn-secondary {
+        padding: 2px 8px !important;
+        font-size: 0.75rem;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        overflow-y: auto;
+    }
+    .modal-content {
+        background-color: #2d3748; /* bg-gray-800 */
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        width: 50%;
+        max-width: 800px;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body class="bg-pattern min-h-screen p-4 relative">
+
+  <div class="flex justify-end space-x-2 mb-4">
+    <button id="refresh-btn" class="text-gray-300 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded">رفرش</button>
+    <a href="/logout" class="text-gray-300 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded">خروج</a>
+  </div>
+
+  <div id="alert-container" class="fixed top-4 right-4 z-50 w-96"></div>
+  <div id="loading-spinner" class="hidden fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-40">
+    <div class="w-16 h-16 border-t-4 border-blue-500 rounded-full animate-spin"></div>
+  </div>
+
+  <div id="adminApp" class="bg-gray-800 bg-opacity-50 backdrop-blur-lg p-6 rounded-2xl mx-auto mt-8 flex flex-wrap">
+
+    <nav class="w-full md:w-1/5 text-white p-4 border-l border-gray-700 mb-6 md:mb-0">
+      <ul>
+        <li v-for="sec in sections" :key="sec.key"
+            @click="selectSection(sec.key)"
+            class="py-2 px-3 cursor-pointer rounded hover:bg-gray-700 transition-colors my-2"
+            :class="{'bg-gray-700 font-bold': activeSection===sec.key}">
+          {{ sec.label }}
+        </li>
+      </ul>
+    </nav>
+
+    <div class="w-full md:w-4/5 p-4 text-white overflow-x-auto">
+
+      <section id="users" v-show="activeSection==='users'" class="content-section" :class="{'active fade-in': activeSection==='users'}">
+        <h2 class="text-2xl font-bold mb-4">مدیریت کاربران</h2>
+        <input v-model="search" @input="fetchUsers" placeholder="جستجو…" class="input-field mb-4 w-full">
+        <table class="min-w-full bg-gray-700 rounded overflow-hidden compact-table">
+            <thead>
+                <tr class="bg-gray-800 text-gray-300">
+                  <th>#</th><th>نام</th><th>نام‌خانوادگی</th><th>جنسیت</th><th>موبایل</th><th>کد ملی</th><th>ایمیل</th><th>نقش</th><th>فعال</th><th>ذخیره</th><th>حذف</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(u, idx) in users" :key="u.id" class="border-b border-gray-600 hover:bg-gray-600">
+                  <td class="text-center">{{ idx+1 }}</td>
+                  <td><input v-model="u.firstName" class="input-field w-full"></td>
+                  <td><input v-model="u.lastName"  class="input-field w-full"></td>
+                  <td>
+                    <select v-model="u.gender" class="input-field w-full">
+                      <option value="male">مرد</option>
+                      <option value="female">زن</option>
+                    </select>
+                  </td>
+                  <td><input v-model="u.phoneNumber" class="input-field w-full"></td>
+                  <td><input v-model="u.nationalId" class="input-field w-full"></td>
+                  <td><input v-model="u.email" class="input-field w-full"></td>
+                  <td>
+                    <select v-model="u.role" class="input-field w-full">
+                      <option value="user">کاربر</option>
+                      <option value="mentor">منتور</option>
+                    </select>
+                  </td>
+                  <td class="text-center"><input type="checkbox" v-model="u.isActive"></td>
+                  <td class="text-center"><button class="btn-primary" @click="updateUser(u)">ذخیره</button></td>
+                  <td class="text-center"><button class="btn-secondary" @click="deleteUser(u)">حذف</button></td>
+                </tr>
+              </tbody>
+        </table>
+      </section>
+
+      <section id="mentors" v-show="activeSection==='mentors'" class="content-section" :class="{'active fade-in': activeSection==='mentors'}">
+        <h2 class="text-2xl font-bold mb-4">مدیریت منتورها</h2>
+        <input v-model="searchMentor" @input="fetchMentors" placeholder="جستجو…" class="input-field mb-4 w-full">
+        <table class="min-w-full bg-gray-700 rounded overflow-hidden compact-table">
+            <thead>
+                <tr class="bg-gray-800 text-gray-300">
+                  <th>#</th><th>نام</th><th>نام‌خانوادگی</th><th>جنسیت</th><th>موبایل</th><th>کد ملی</th><th>ایمیل</th><th>نقش</th><th>فعال</th><th>ذخیره</th><th>حذف</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(u, idx) in mentors" :key="u.id" class="border-b border-gray-600 hover:bg-gray-600">
+                  <td class="text-center">{{ idx+1 }}</td>
+                  <td><input v-model="u.firstName" class="input-field w-full"></td>
+                  <td><input v-model="u.lastName"  class="input-field w-full"></td>
+                  <td>
+                    <select v-model="u.gender" class="input-field w-full">
+                      <option value="male">مرد</option>
+                      <option value="female">زن</option>
+                    </select>
+                  </td>
+                  <td><input v-model="u.phoneNumber" class="input-field w-full"></td>
+                  <td><input v-model="u.nationalId" class="input-field w-full"></td>
+                  <td><input v-model="u.email" class="input-field w-full"></td>
+                  <td>
+                    <select v-model="u.role" class="input-field w-full">
+                      <option value="user">کاربر</option>
+                      <option value="mentor">منتور</option>
+                    </select>
+                  </td>
+                  <td class="text-center"><input type="checkbox" v-model="u.isActive"></td>
+                  <td class="text-center"><button class="btn-primary" @click="updateUser(u)">ذخیره</button></td>
+                  <td class="text-center"><button class="btn-secondary" @click="deleteUser(u)">حذف</button></td>
+                </tr>
+              </tbody>
+        </table>
+      </section>
+
+      <section id="announcements" v-show="activeSection==='announcements'" class="content-section" :class="{'active fade-in': activeSection==='announcements'}">
+        <h2 class="text-2xl font-bold mb-4">مدیریت اطلاعیه‌ها</h2>
+        <button @click="openCreateForm" class="btn-primary px-4 py-2 mb-4">ایجاد اطلاعیه جدید</button>
+        <table class="min-w-full bg-gray-700 rounded overflow-hidden text-sm">
+            <thead>
+                <tr class="bg-gray-800 text-gray-300">
+                  <th>#</th><th>عنوان</th><th>مختصر</th><th>تاریخ</th><th>ویرایش</th><th>حذف</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(a, idx) in announcements" :key="a.id" class="border-b border-gray-600 hover:bg-gray-600">
+                  <td class="px-2 py-1 text-center">{{ idx+1 }}</td>
+                  <td class="px-2">{{ a.title }}</td>
+                  <td class="px-2">{{ a.shortDescription||'—' }}</td>
+                  <td class="px-2">{{ new Date(a.createdAt).toLocaleDateString('fa-IR') }}</td>
+                  <td class="px-2 text-center"><button class="btn-primary px-2 py-1" @click="openEditForm(a)">ویرایش</button></td>
+                  <td class="px-2 text-center"><button class="btn-secondary px-2 py-1" @click="deleteAnnouncement(a)">حذف</button></td>
+                </tr>
+              </tbody>
+        </table>
+        <div v-if="showForm" class="modal-backdrop">
+          <div class="modal-content">
+            <h3 class="text-xl font-bold">{{ editingId ? 'ویرایش اطلاعیه' : 'ایجاد اطلاعیه جدید' }}</h3>
+            <input v-model="form.title" placeholder="عنوان *" class="input-field w-full mt-4" />
+            <input v-model="form.shortDescription" placeholder="مختصر" class="input-field w-full mt-2" />
+            <textarea v-model="form.longDescription" placeholder="توضیح کامل" class="input-field w-full h-24 mt-2"></textarea>
+            <div v-if="form.attachments.length">
+                <p class="font-medium mt-4">ضمائم فعلی:</p>
+                <ul class="space-y-2 mt-2">
+                    <li v-for="att in form.attachments" :key="att.id" class="border border-gray-600 p-2 rounded flex justify-between items-center">
+                        <a :href="att.path" target="_blank" class="underline text-blue-400">{{ att.displayName }}</a>
+                        <button @click="markForDelete(att.id)" class="text-red-400">حذف</button>
+                    </li>
+                </ul>
+            </div>
+            <div v-if="form.newFiles.length">
+                <p class="font-medium mt-4">فایل‌های جدید:</p>
+                <ul class="space-y-2 mt-2">
+                    <li v-for="(obj, i) in form.newFiles" :key="i" class="border border-gray-600 p-2 rounded flex justify-between items-center">
+                        <span>{{ obj.file.name }}</span>
+                        <button @click="removeNewFile(i)" class="text-red-400">×</button>
+                    </li>
+                </ul>
+            </div>
+            <input type="file" multiple @change="onFileChange" class="w-full mt-4" />
+            <div class="flex justify-end space-x-2 mt-6">
+              <button @click="closeForm" class="btn-secondary px-4 py-2">انصراف</button>
+              <button @click="saveAnnouncement" class="btn-primary px-4 py-2">{{ editingId ? 'ذخیره' : 'ایجاد' }}</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <section id="groups" v-show="activeSection==='groups'" class="content-section" :class="{'active fade-in': activeSection==='groups'}">
+        <h2 class="text-2xl font-bold mb-4">مدیریت گروه‌ها</h2>
+        <table class="min-w-full bg-gray-700 rounded overflow-hidden text-sm">
+            <thead>
+                <tr class="bg-gray-800 text-gray-300">
+                  <th>#</th><th>نام گروه</th><th>کد</th><th>کیف پول</th><th>امتیاز</th><th>اعضا</th><th>سرگروه</th><th>ذخیره</th><th>حذف</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(g,idx) in groups" :key="g.id" class="border-b border-gray-600 hover:bg-gray-600">
+                  <td class="px-2 py-1 text-center">{{ idx+1 }}</td>
+                  <td class="px-2"><input v-model="g.name" class="input-field w-full text-sm"></td>
+                  <td class="px-2"><input v-model="g.code" class="input-field w-full text-sm"></td>
+                  <td class="px-2"><input v-model="g.walletCode" class="input-field w-full text-sm"></td>
+                  <td class="px-2"><input type="number" v-model.number="g.score" class="input-field w-full text-sm"></td>
+                  <td class="px-2 text-center">{{ g.members.length }}</td>
+                  <td class="px-2">{{ g.leader ? `${g.leader.firstName} ${g.leader.lastName}` : 'نامشخص' }}</td>
+                  <td class="px-2 text-center"><button class="btn-primary px-2 py-1 text-sm" @click="updateGroup(g)">ذخیره</button></td>
+                  <td class="px-2 text-center"><button class="btn-secondary px-2 py-1 text-sm" @click="deleteGroup(g)">حذف</button></td>
+                </tr>
+              </tbody>
+        </table>
+      </section>
+
+      <section id="items" v-show="activeSection==='items'" class="content-section" :class="{'active fade-in': activeSection==='items'}">
+        
+        <div v-if="showCurrencyForm" class="modal-backdrop">
+          <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">{{ editingId ? 'ویرایش ارز' : 'ایجاد ارز جدید' }}</h3>
+            <div class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input v-model="currencyForm.name" placeholder="نام ارز (مثلا: سکه طلا)" class="input-field">
+                <input v-model.number="currencyForm.basePrice" type="number" placeholder="قیمت پایه" class="input-field">
+                <input v-model.number="currencyForm.priceCoefficient" type="number" step="0.001" placeholder="ضریب نوسان قیمت" class="input-field">
+              </div>
+              <textarea v-model="currencyForm.description" placeholder="توضیحات (اختیاری)" class="input-field w-full" rows="3"></textarea>
+              <div>
+                <label class="block mb-2 text-sm font-medium text-gray-300">عکس ارز</label>
+                <div v-if="editingId && currencyForm.image" class="mb-2">
+                    <img :src="currencyForm.image" alt="عکس فعلی" class="w-24 h-24 rounded-lg object-cover">
+                </div>
+                <input type="file" @change="handleFileSelect($event)" class="input-field w-full" accept="image/*">
+                <p class="text-xs text-gray-400 mt-1">یک عکس جدید برای ایجاد یا جایگزینی عکس فعلی انتخاب کنید.</p>
+              </div>
+            </div>
+            <div class="flex justify-end mt-6">
+              <button @click="showCurrencyForm = false" class="btn-secondary ml-2 px-4 py-2">انصراف</button>
+              <button @click="saveCurrency" class="btn-primary px-4 py-2">ذخیره</button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="showUniqueItemForm" class="modal-backdrop">
+          <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">{{ editingId ? 'ویرایش آیتم خاص' : 'ایجاد آیتم خاص' }}</h3>
+            <div class="space-y-4">
+              <input v-model="uniqueItemForm.name" placeholder="نام آیتم خاص" class="input-field w-full">
+              <input v-model.number="uniqueItemForm.purchasePrice" type="number" placeholder="قیمت خرید (امتیاز)" class="input-field w-full">
+              <textarea v-model="uniqueItemForm.description" placeholder="توضیحات آیتم" class="input-field w-full" rows="3"></textarea>
+              <div>
+                <label class="block mb-2 text-sm font-medium text-gray-300">عکس آیتم</label>
+                <div v-if="editingId && uniqueItemForm.image" class="mb-2">
+                    <img :src="uniqueItemForm.image" alt="عکس فعلی" class="w-24 h-24 rounded-lg object-cover">
+                </div>
+                <input type="file" @change="handleUniqueItemFileSelect($event)" class="input-field w-full" accept="image/*">
+              </div>
+            </div>
+            <div class="flex justify-end mt-6">
+              <button @click="showUniqueItemForm = false" class="btn-secondary ml-2 px-4 py-2">انصراف</button>
+              <button @click="saveUniqueItem" class="btn-primary px-4 py-2">ذخیره</button>
+            </div>
+          </div>
+        </div>
+      
+        <div class="mb-8">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">مدیریت ارزها</h2>
+            <button @click="openCreateCurrencyForm" class="btn-primary">ایجاد ارز جدید</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="admin-table w-full compact-table">
+              <thead>
+                <tr>
+                  <th>عکس</th><th>نام ارز</th><th>قیمت پایه</th><th>ضریب نوسان</th><th>ضریب ادمین</th><th>عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="c in currencies" :key="c.id">
+                  <td><img :src="c.image || 'https://via.placeholder.com/40'" class="w-10 h-10 rounded-full object-cover"></td>
+                  <td>{{ c.name }}</td>
+                  <td>{{ c.basePrice }}</td>
+                  <td>{{ c.priceCoefficient }}</td>
+                  <td>{{ c.adminModifier }}</td>
+                  <td>
+                    <button @click="openEditCurrencyForm(c)" class="btn-secondary text-sm ml-1">ویرایش</button>
+                    <button @click="applyModifier(c)" class="btn-primary text-sm ml-1">اعمال ضریب</button>
+                    <button @click="deleteCurrency(c)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm ml-1">حذف</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      
+        <hr class="my-8 border-gray-600">
+
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">مدیریت آیتم‌های خاص</h2>
+            <button @click="openCreateUniqueItemForm" class="btn-primary">ایجاد آیتم جدید</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="admin-table w-full compact-table">
+              <thead>
+                <tr>
+                  <th>عکس</th><th>نام آیتم</th><th>شناسه یکتا</th><th>قیمت خرید</th><th>وضعیت</th><th>مالک</th><th>عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in unique_items" :key="item.id">
+                  <td><img :src="item.image || 'https://via.placeholder.com/40'" class="w-10 h-10 rounded-full object-cover"></td>
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.uniqueIdentifier }}</td>
+                  <td>{{ item.purchasePrice }}</td>
+                  <td>
+                    <span :class="item.status === 'in_shop' ? 'text-green-400' : 'text-yellow-400'">
+                      {{ item.status === 'in_shop' ? 'در فروشگاه' : 'فروخته شده' }}
+                    </span>
+                  </td>
+                  <td>{{ item.owner ? item.owner.name : '—' }}</td>
+                  <td>
+                    <button @click="openEditUniqueItemForm(item)" class="btn-secondary text-sm ml-1">ویرایش</button>
+                    <button @click="deleteUniqueItem(item)" v-if="item.status === 'in_shop'" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm ml-1">حذف</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <section id="contents" v-show="activeSection==='contents'" class="content-section" :class="{'active fade-in': activeSection==='contents'}">
+        <h2 class="text-2xl font-bold mb-4">مدیریت محتواها</h2>
+        <button @click="openCreateContentForm" class="btn-primary px-4 py-2 mb-4">ایجاد محتوای جدید</button>
+        <table class="min-w-full bg-gray-700 rounded overflow-hidden text-sm">
+          <thead class="bg-gray-800 text-gray-300">
+              <tr>
+                <th class="px-2 py-1">#</th><th class="px-2 py-1">عنوان</th><th class="px-2 py-1">مختصر</th><th class="px-2 py-1">تاریخ</th><th class="px-2 py-1">فایل‌ها</th><th class="px-2 py-1">ویرایش</th><th class="px-2 py-1">حذف</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(c, idx) in training" :key="c.id" class="border-b border-gray-600 hover:bg-gray-600">
+                <td class="px-2 py-1 text-center">{{ idx+1 }}</td>
+                <td class="px-2">{{ c.title }}</td>
+                <td class="px-2">{{ c.shortDescription||'—' }}</td>
+                <td class="px-2">{{ new Date(c.createdAt).toLocaleDateString('fa-IR') }}</td>
+                <td class="px-2">
+                  <ul class="list-disc list-inside">
+                    <li v-for="att in c.attachments" :key="att.id">
+                      <a :href="att.path" target="_blank" class="underline text-blue-400">{{ att.originalName }}</a>
+                    </li>
+                  </ul>
+                </td>
+                <td class="px-2 text-center">
+                  <button @click="openEditContentForm(c)" class="btn-secondary px-2 py-1 text-sm">ویرایش</button>
+                </td>
+                <td class="px-2 text-center">
+                  <button @click="deleteContent(c)" class="btn-primary px-2 py-1 text-sm">حذف</button>
+                </td>
+              </tr>
+            </tbody>
+        </table>
+
+        <div v-if="showContentForm" class="modal-backdrop">
+            <div class="modal-content">
+                <h3 class="text-xl font-bold">{{ editingContentId ? 'ویرایش محتوا' : 'ایجاد محتوا جدید' }}</h3>
+                <input v-model="contentForm.title" placeholder="عنوان *" class="input-field w-full mt-4" />
+                <input v-model="contentForm.shortDescription" placeholder="مختصر" class="input-field w-full mt-2" />
+                <textarea v-model="contentForm.longDescription" placeholder="توضیح کامل" class="input-field w-full h-24 mt-2"></textarea>
+                <div v-if="contentForm.attachments.length">
+                    <p class="font-medium mt-4">ضمائم فعلی:</p>
+                    <ul class="space-y-2 mt-2">
+                        <li v-for="att in contentForm.attachments" :key="att.id" class="border border-gray-600 p-2 rounded flex justify-between items-center">
+                            <a :href="att.path" target="_blank" class="underline text-blue-400">{{ att.displayName }}</a>
+                            <button @click="markContentForDelete(att.id)" class="text-red-400">حذف</button>
+                        </li>
+                    </ul>
+                </div>
+                <input type="file" multiple @change="handleContentFiles" class="w-full mt-4"/>
+                <div class="flex justify-end space-x-2 mt-6">
+                    <button @click="showContentForm=false" class="btn-secondary px-4 py-2">انصراف</button>
+                    <button @click="saveContent" class="btn-primary px-4 py-2">ذخیره</button>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section id="features" v-show="activeSection==='features'" class="content-section" :class="{'active fade-in': activeSection==='features'}">
+        <h2 class="text-2xl font-bold text-white mb-6">مدیریت رویدادها و قابلیت‌ها</h2>
+      
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+          
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold text-cyan-400 border-b-2 border-cyan-500 pb-2 mb-4">
+              کنترل دسترسی به منوها
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div v-for="flag in menuFlags" :key="flag.name" 
+                  class="bg-gray-700 p-4 rounded-lg flex items-center justify-between shadow">
+                <label :for="'toggle-' + flag.name" class="text-gray-200 text-sm font-medium">
+                  {{ flag.displayName }}
+                </label>
+                <input type="checkbox" :id="'toggle-' + flag.name" class="w-6 h-6" 
+                      v-model="flag.isEnabled">
+              </div>
+            </div>
+          </div>
+      
+          <div class="mb-8">
+            <h3 class="text-xl font-semibold text-amber-400 border-b-2 border-amber-500 pb-2 mb-4">
+              کنترل عملیات‌های حساس
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div v-for="flag in actionFlags" :key="flag.name" 
+                  class="bg-gray-700 p-4 rounded-lg flex items-center justify-between shadow">
+                <label :for="'toggle-' + flag.name" class="text-gray-200 text-sm font-medium">
+                  {{ flag.displayName }}
+                </label>
+                <input type="checkbox" :id="'toggle-' + flag.name" class="w-6 h-6" v-model="flag.isEnabled">
+              </div>
+            </div>
+          </div>
+      
+          <div class="flex justify-end mt-6">
+            <button @click="saveFeatureFlags" 
+                    class="btn-primary text-white font-bold py-2 px-6 rounded-lg
+                           hover:bg-green-600 transition duration-300">
+              ذخیره تغییرات
+            </button>
+          </div>
+      
+        </div>
+      </section>
+      
+      <section id="radio" v-show="activeSection === 'radio'" class="content-section" :class="{'active fade-in': activeSection==='radio'}">
+        <h2 class="text-2xl font-bold text-yellow-400 mb-6 text-center">کنترل پنل رادیو</h2>
+        
+        <div class="max-w-md mx-auto bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-6 text-center">
+          
+          <div class="mb-8">
+            <p class="text-gray-400 mb-3 text-sm">وضعیت پخش زنده</p>
+            <button @click="toggleBroadcast" 
+                    :class="isBroadcasting ? 'bg-red-600 hover:bg-red-700 shadow-red-500/50' : 'bg-green-600 hover:bg-green-700 shadow-green-500/50'"
+                    class="text-white font-bold py-3 px-6 rounded-lg text-lg w-full transition-all duration-300 transform hover:scale-105 shadow-lg">
+              <i :class="isBroadcasting ? 'fas fa-stop-circle' : 'fas fa-microphone-alt'" class="ml-2"></i>
+              {{ isBroadcasting ? 'توقف پخش' : 'شروع پخش زنده' }}
+            </button>
+          </div>
+      
+          <div v-if="isBroadcasting" class="border-t border-gray-600 pt-6">
+            <p class="text-gray-400 mb-3 text-sm">افکت تغییر صدا </p>
+            <button @click="toggleVoiceEffect"
+                    :class="isEffectOn ? 'bg-blue-600' : 'bg-gray-600'"
+                    class="text-white py-2 px-4 rounded-lg w-full transition-colors">
+              <i :class="isEffectOn ? 'fas fa-toggle-on' : 'fas fa-toggle-off'" class="ml-2 text-xl align-middle"></i>
+              <span class="align-middle">{{ isEffectOn ? 'فعال' : 'غیرفعال' }}</span>
+            </button>
+          </div>
+          
+          <p v-else class="text-gray-500 text-sm mt-6">برای فعال‌سازی افکت، ابتدا پخش زنده را شروع کنید.</p>
+      
+        </div>
+      </section>
+
+      <!-- بخش مدیریت سوالات (بانک سوال) -->
+      <section id="question_bank_questions_section" v-show="activeSection==='question_bank_questions'" class="content-section" :class="{'active fade-in': activeSection==='question_bank_questions'}">
+        <h2 class="text-2xl font-bold mb-4">مدیریت سوالات (بانک سوال)</h2>
+        <button @click="openNewQuestionForm" class="btn-primary px-4 py-2 mb-4">ایجاد سوال جدید</button>
+
+        <table class="min-w-full bg-gray-700 rounded overflow-hidden text-sm compact-table">
+          <thead>
+            <tr class="bg-gray-800 text-gray-300">
+              <th>#</th>
+              <th>نام سوال</th>
+              <th>امتیاز</th>
+              <th>رنگ</th>
+              <th>قیمت خرید</th>
+              <th>وضعیت</th>
+              <th>سازنده</th>
+              <th>تاریخ ایجاد</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(q, idx) in questions" :key="q.id" class="border-b border-gray-600 hover:bg-gray-600">
+              <td class="text-center">{{ idx + 1 }}</td>
+              <td>{{ q.name }}</td>
+              <td class="text-center">{{ q.points }}</td>
+              <td><span :style="{ backgroundColor: q.color, padding: '2px 8px', borderRadius: '4px', color: '#000' }">{{ q.color }}</span></td>
+              <td class="text-center">{{ q.price }}</td>
+              <td class="text-center" :class="q.isActive ? 'text-green-400' : 'text-red-400'">{{ q.isActive ? 'فعال' : 'غیرفعال' }}</td>
+              <td>{{ q.creatorType === 'admin' ? 'ادمین' : 'منتور' }} ({{ q.creatorId }})</td>
+              <td>{{ new Date(q.createdAt).toLocaleDateString('fa-IR') }}</td>
+              <td class="text-center">
+                <button @click="openEditQuestionForm(q)" class="btn-secondary px-2 py-1 text-xs">ویرایش</button>
+                <button @click="deleteQuestion(q)" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs ml-1">حذف</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Modal for Creating/Editing Question -->
+        <div v-if="showQuestionFormModal" class="modal-backdrop">
+          <div class="modal-content text-gray-200 w-1/2">
+            <h3 class="text-xl font-bold mb-4">{{ editingQuestion ? 'ویرایش سوال' : 'ایجاد سوال جدید' }}</h3>
+            <div class="space-y-3">
+              <div>
+                <label class="block mb-1">نام سوال <span class="text-red-500">*</span></label>
+                <input v-model="questionForm.name" placeholder="مثال: معمای ریاضی سخت" class="input-field w-full">
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block mb-1">امتیاز سوال <span class="text-red-500">*</span></label>
+                  <input v-model.number="questionForm.points" type="number" min="1" placeholder="مثال: 5" class="input-field w-full">
+                </div>
+                <div>
+                  <label class="block mb-1">قیمت خرید سوال (با امتیاز) <span class="text-red-500">*</span></label>
+                  <input v-model.number="questionForm.price" type="number" min="0" placeholder="مثال: 50" class="input-field w-full">
+                </div>
+              </div>
+              <div>
+                <label class="block mb-1">رنگ کارت سوال <span class="text-red-500">*</span></label>
+                <select v-model="questionForm.color" class="input-field w-full">
+                  <option v-for="color in pastelColors" :key="color.value" :value="color.value">{{ color.name }} ({{color.value}})</option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-1">تصویر سوال <span v-if="!editingQuestion" class="text-red-500">*</span></label>
+                <input type="file" @change="handleQuestionImageUpload" accept="image/jpeg,image/png,image/jpg,application/pdf" class="input-field w-full">
+                <img v-if="questionForm.imagePreview" :src="questionForm.imagePreview" alt="پیش‌نمایش تصویر" class="mt-2 rounded max-h-40">
+              </div>
+              <div>
+                <label class="block mb-1">
+                  <input type="checkbox" v-model="questionForm.isActive" class="ml-2">
+                  سوال فعال باشد (در ویترین نمایش داده شود)؟
+                </label>
+              </div>
+            </div>
+            <div class="flex justify-end space-x-2 mt-6">
+              <button @click="showQuestionFormModal = false" class="btn-secondary px-4 py-2">انصراف</button>
+              <button @click="saveQuestion" class="btn-primary px-4 py-2">{{ editingQuestion ? 'ذخیره تغییرات' : 'ایجاد سوال' }}</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="question_bank_correction_section" v-show="activeSection==='question_bank_correction'" class="content-section" :class="{'active fade-in': activeSection==='question_bank_correction'}">
+        <h2 class="text-2xl font-bold mb-4">تصحیح کمبوهای ارسالی</h2>
+        <div v-if="!submissionsForCorrection.length" class="text-center py-4">
+            موردی برای تصحیح وجود ندارد.
+        </div>
+        <table v-else class="min-w-full bg-gray-700 rounded overflow-hidden text-sm compact-table">
+          <thead>
+            <tr class="bg-gray-800 text-gray-300">
+              <th>#</th>
+              <th>شناسه کمبو</th>
+              <th v-if="isAdminUser">نام گروه</th>
+              <th>تاریخ ارسال</th>
+              <th>تعداد سوالات</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(sub, idx) in submissionsForCorrection" :key="sub.id" class="border-b border-gray-600 hover:bg-gray-600">
+              <td class="text-center">{{ idx + 1 }}</td>
+              <td class="text-center">{{ sub.id }}</td>
+              <td v-if="isAdminUser">{{ sub.group ? sub.group.name : 'نامشخص' }} (ID: {{sub.groupId}})</td>
+              <td>{{ new Date(sub.submissionDate).toLocaleString('fa-IR') }}</td>
+              <td class="text-center">{{ sub.submittedQuestions ? sub.submittedQuestions.length : (selectedSubmissionForDetails && sub.id === selectedSubmissionForDetails.id ? selectedSubmissionForDetails.submittedQuestions.length : 'N/A') }}</td>
+              <td class="text-center">
+                <button @click="openCorrectionModal(sub)" class="btn-primary px-3 py-1 text-xs">بررسی و تصحیح</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Modal for Combo Correction Details -->
+        <div v-if="showCorrectionModal && selectedSubmissionForDetails" class="modal-backdrop">
+          <div class="modal-content text-gray-200 w-3/4 max-w-4xl">
+            <h3 class="text-xl font-bold mb-4">تصحیح کمبو شناسه: {{ selectedSubmissionForDetails.id }}
+                <span v-if="isAdminUser"> - گروه: {{ selectedSubmissionForDetails.group.name }}</span>
+            </h3>
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto p-2 bg-gray-700 rounded">
+              <div v-for="(cq, cIdx) in currentCorrections" :key="cq.purchasedQuestionId" class="border border-gray-600 p-3 rounded">
+                <p class="font-semibold">سوال {{ cIdx + 1 }}: {{ cq.questionName }}</p>
+                <div class="my-2">
+                    <p>تصویر سوال:</p>
+                    <img :src="cq.questionImage" alt="تصویر سوال" class="max-w-xs max-h-48 rounded border border-gray-500">
+                </div>
+                 <div class="my-2">
+                    <p>فایل جواب ارسالی:</p>
+                    <a v-if="cq.answerImage" :href="cq.answerImage" target="_blank" class="text-blue-400 hover:underline">
+                        مشاهده/دانلود جواب ({{ cq.answerImage.split('.').pop() }})
+                    </a>
+                    <span v-else class="text-gray-400">جوابی آپلود نشده</span>
+                </div>
+                <div class="mt-2">
+                  <label class="mr-2">وضعیت پاسخ:</label>
+                  <label class="mr-2"><input type="radio" :name="'correct_status_'+cq.purchasedQuestionId" :value="true" v-model="cq.isCorrect"> صحیح</label>
+                  <label><input type="radio" :name="'correct_status_'+cq.purchasedQuestionId" :value="false" v-model="cq.isCorrect"> غلط</label>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-end space-x-2 mt-6">
+              <button @click="showCorrectionModal = false; selectedSubmissionForDetails = null;" class="btn-secondary px-4 py-2">انصراف</button>
+              <button @click="submitComboCorrection" class="btn-primary px-4 py-2">ثبت نهایی تصحیح</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="question_bank_settings_section" v-if="isAdminUser" v-show="activeSection==='question_bank_settings'" class="content-section" :class="{'active fade-in': activeSection==='question_bank_settings'}">
+        <h2 class="text-2xl font-bold mb-4">تنظیمات بانک سوالات</h2>
+        <div class="bg-gray-700 p-6 rounded-lg max-w-md mx-auto">
+          <div class="mb-4">
+            <label for="comboMultiplier" class="block text-sm font-medium text-gray-300">ضریب امتیاز کمبوی معمولی (3 کارت همرنگ):</label>
+            <input type="number" step="0.1" id="comboMultiplier" v-model.number="questionBankSettings.comboMultiplier" class="input-field w-full mt-1">
+            <p class="text-xs text-gray-400 mt-1">مثال: اگر 2 باشد، مجموع امتیاز کارت‌ها × 2 می‌شود.</p>
+          </div>
+          <div class="mb-6">
+            <label for="sequentialComboMultiplier" class="block text-sm font-medium text-gray-300">ضریب امتیاز کمبوی همرنگ و اعداد پشت سر هم:</label>
+            <input type="number" step="0.1" id="sequentialComboMultiplier" v-model.number="questionBankSettings.sequentialComboMultiplier" class="input-field w-full mt-1">
+            <p class="text-xs text-gray-400 mt-1">مثال: اگر 4 باشد، مجموع امتیاز کارت‌ها × 4 می‌شود.</p>
+          </div>
+          <button @click="saveQuestionBankSettings" class="btn-primary w-full py-2">ذخیره تنظیمات</button>
+        </div>
+      </section>
+
+      <!-- Territory Defense Game Management Section -->
+      <section id="game_management" v-show="activeSection==='game_management'" class="content-section" :class="{'active fade-in': activeSection==='game_management'}">
+        <h2 class="text-2xl font-bold mb-6 text-center border-b pb-3 border-gray-700">مدیریت بازی دفاع از قلمرو</h2>
+
+        <!-- Tabs for Game Management -->
+        <div class="flex border-b border-gray-600 mb-6">
+          <button @click="selectGameManagementTab('maps')"
+                  :class="{'border-blue-500 text-blue-400': gameManagementActiveTab === 'maps', 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500': gameManagementActiveTab !== 'maps'}"
+                  class="py-3 px-5 font-medium border-b-2 focus:outline-none">
+            <i class="fas fa-map mr-2"></i>مدیریت نقشه‌ها
+          </button>
+          <button @click="selectGameManagementTab('attacks')"
+                  :class="{'border-blue-500 text-blue-400': gameManagementActiveTab === 'attacks', 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500': gameManagementActiveTab !== 'attacks'}"
+                  class="py-3 px-5 font-medium border-b-2 focus:outline-none">
+            <i class="fas fa-bolt mr-2"></i>مدیریت حملات
+          </button>
+          <button @click="selectGameManagementTab('ammunition')"
+                  :class="{'border-blue-500 text-blue-400': gameManagementActiveTab === 'ammunition', 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500': gameManagementActiveTab !== 'ammunition'}"
+                  class="py-3 px-5 font-medium border-b-2 focus:outline-none">
+            <i class="fas fa-archive mr-2"></i>مدیریت مهمات
+          </button>
+          <button @click="selectGameManagementTab('settings')"
+                  :class="{'border-blue-500 text-blue-400': gameManagementActiveTab === 'settings', 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500': gameManagementActiveTab !== 'settings'}"
+                  class="py-3 px-5 font-medium border-b-2 focus:outline-none">
+            <i class="fas fa-cogs mr-2"></i>تنظیمات کلی
+          </button>
+           <button @click="selectGameManagementTab('reset')"
+                  :class="{'border-red-500 text-red-400': gameManagementActiveTab === 'reset', 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500': gameManagementActiveTab !== 'reset'}"
+                  class="py-3 px-5 font-medium border-b-2 focus:outline-none">
+            <i class="fas fa-undo mr-2"></i>ریست بازی
+          </button>
+        </div>
+
+        <!-- Maps Tab Content -->
+        <div v-if="gameManagementActiveTab === 'maps'">
+          <h3 class="text-xl font-semibold mb-4">ایجاد نقشه جدید</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-gray-700 p-4 rounded-lg">
+            <input v-model.trim="newMapForm.name" placeholder="نام نقشه" class="input-field">
+            <input v-model.number="newMapForm.size" type="number" min="5" max="100" placeholder="اندازه (مثلا 20 برای 20x20)" class="input-field">
+            <button @click="createNewMap" class="btn-primary">ایجاد نقشه</button>
+          </div>
+
+          <h3 class="text-xl font-semibold mb-4">لیست نقشه‌های موجود</h3>
+          <div class="overflow-x-auto">
+            <table class="admin-table w-full compact-table">
+              <thead>
+                <tr><th>نام نقشه</th><th>اندازه</th><th>وضعیت</th><th>قفل بازی</th><th>تاریخ ایجاد</th><th>عملیات</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="map in gameMaps" :key="map.id">
+                  <td>{{ map.name }}</td>
+                  <td class="text-center">{{ map.size }}x{{ map.size }}</td>
+                  <td class="text-center" :class="map.isActive ? 'text-green-400' : 'text-gray-500'">{{ map.isActive ? 'فعال' : 'غیرفعال' }}</td>
+                  <td class="text-center" :class="map.gameLocked ? 'text-yellow-400' : 'text-green-400'">{{ map.gameLocked ? 'قفل شده' : 'باز' }}</td>
+                  <td>{{ formatDateForDisplay(map.createdAt) }}</td>
+                  <td class="text-center">
+                    <button @click="openEditMapModal(map)" class="btn-secondary text-xs px-2 py-1">ویرایش</button>
+                  </td>
+                </tr>
+                <tr v-if="!gameMaps.length"><td colspan="6" class="text-center py-3">هیچ نقشه‌ای یافت نشد.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Edit Map Modal -->
+          <div v-if="editingMap" class="modal-backdrop">
+            <div class="modal-content">
+              <h4 class="text-lg font-bold mb-3">ویرایش نقشه: {{ editingMap.name }}</h4>
+              <div class="space-y-3">
+                <div><label class="block text-sm">نام نقشه:</label><input v-model.trim="editingMap.name" class="input-field w-full"></div>
+                <div>
+                  <label class="block text-sm">وضعیت:</label>
+                  <select v-model="editingMap.isActive" class="input-field w-full">
+                    <option :value="true">فعال</option>
+                    <option :value="false">غیرفعال</option>
+                  </select>
+                  <p class="text-xs text-gray-400 mt-1">فعال کردن این نقشه، سایر نقشه‌های فعال را غیرفعال می‌کند.</p>
+                </div>
+                <div>
+                  <label class="block text-sm">وضعیت قفل بازی:</label>
+                  <select v-model="editingMap.gameLocked" class="input-field w-full">
+                    <option :value="true">قفل شده (خرید/ارتقا ممنوع)</option>
+                    <option :value="false">باز</option>
+                  </select>
+                </div>
+                <p class="text-sm text-gray-400">اندازه نقشه پس از ایجاد قابل تغییر نیست.</p>
+              </div>
+              <div class="flex justify-end space-x-2 mt-5">
+                <button @click="cancelEditMap" class="btn-secondary">انصراف</button>
+                <button @click="saveMapChanges" class="btn-primary">ذخیره تغییرات</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attacks Tab Content -->
+        <div v-if="gameManagementActiveTab === 'attacks'">
+          <h3 class="text-xl font-semibold mb-4">زمان‌بندی موج حمله جدید</h3>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 bg-gray-700 p-4 rounded-lg items-end">
+            <div class="md:col-span-2">
+              <label class="block text-sm mb-1">انتخاب نقشه فعال:</label>
+              <select v-model="newAttackForm.mapId" class="input-field w-full">
+                <option value="">-- انتخاب نقشه --</option>
+                <option v-for="map in availableMapsForAttack" :key="map.id" :value="map.id">{{ map.name }} ({{map.size}}x{{map.size}})</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm mb-1">قدرت حمله:</label>
+              <input v-model.number="newAttackForm.power" type="number" min="10" placeholder="قدرت" class="input-field w-full">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-sm mb-1">مقدار زمان:</label>
+                <input v-model.number="newAttackForm.durationValue" type="number" min="1" placeholder="مثلا 30" class="input-field w-full">
+              </div>
+              <div>
+                <label class="block text-sm mb-1">واحد زمان:</label>
+                <select v-model="newAttackForm.durationUnit" class="input-field w-full">
+                  <option v-for="unit in attackDurationUnits" :key="unit.value" :value="unit.value">{{ unit.text }}</option>
+                </select>
+              </div>
+            </div>
+            <button @click="scheduleNewAttack" class="btn-primary h-10">زمان‌بندی حمله</button>
+            <div class="md:col-span-full">
+              <label class="inline-flex items-center">
+                <input type="checkbox" v-model="newAttackForm.isPowerVisible" class="form-checkbox h-5 w-5 text-blue-500 bg-gray-800 border-gray-600 rounded focus:ring-blue-400">
+                <span class="ml-2 text-sm">قدرت حمله برای کاربران قابل مشاهده باشد</span>
+              </label>
+            </div>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">اجرای دستی موج حمله بعدی (برای نقشه فعال انتخاب شده)</h3>
+           <div class="flex items-center space-x-3 mb-6 bg-gray-700 p-4 rounded-lg">
+              <select v-model="newAttackForm.mapId" class="input-field">
+                <option value="">-- انتخاب نقشه برای اجرای دستی --</option>
+                <option v-for="map in availableMapsForAttack" :key="map.id" :value="map.id">{{ map.name }}</option>
+              </select>
+              <button @click="executeAttackWaveManually(newAttackForm.mapId)" class="btn-danger" :disabled="!newAttackForm.mapId">اجرای دستی موج بعدی</button>
+              <p class="text-xs text-yellow-400">این عمل موج حمله بعدی (اگر زمانش رسیده باشد) را برای نقشه انتخاب شده اجرا می‌کند.</p>
+          </div>
+
+
+          <h3 class="text-xl font-semibold mb-4">لیست امواج حمله تعریف شده</h3>
+          <div class="overflow-x-auto">
+            <table class="admin-table w-full compact-table">
+              <thead><tr><th>نقشه</th><th>قدرت</th><th>زمان حمله</th><th>قدرت قابل مشاهده</th><th>وضعیت</th></tr></thead>
+              <tbody>
+                <tr v-for="wave in attackWaves" :key="wave.id">
+                  <td>{{ wave.map ? wave.map.name : wave.MapId }}</td>
+                  <td class="text-center">{{ wave.power }}</td>
+                  <td>{{ formatDateForDisplay(wave.attackTime) }}</td>
+                  <td class="text-center" :class="wave.isPowerVisible ? 'text-green-400':'text-gray-500'">{{ wave.isPowerVisible ? 'بله' : 'خیر' }}</td>
+                  <td class="text-center" :class="wave.isExecuted ? 'text-red-400':'text-green-400'">{{ wave.isExecuted ? 'اجرا شده' : 'در انتظار' }}</td>
+                </tr>
+                <tr v-if="!attackWaves.length"><td colspan="5" class="text-center py-3">هیچ موج حمله‌ای یافت نشد.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Ammunition Tab Content -->
+        <div v-if="gameManagementActiveTab === 'ammunition'">
+          <h3 class="text-xl font-semibold mb-4">ایجاد مهمات جدید</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-gray-700 p-4 rounded-lg items-start">
+            <input v-model.trim="newAmmunitionForm.name" placeholder="نام مهمات" class="input-field">
+            <input v-model.number="newAmmunitionForm.price" type="number" min="0" placeholder="قیمت (امتیاز)" class="input-field">
+            <input v-model.number="newAmmunitionForm.health" type="number" min="1" placeholder="سلامت پایه مهمات" class="input-field">
+            <input v-model.number="newAmmunitionForm.defenseLine" type="number" min="1" placeholder="خط دفاعی (عدد بالاتر خارجی‌تر)" class="input-field">
+            <input v-model.number="newAmmunitionForm.maxPerWall" type="number" min="1" placeholder="حداکثر در هر دیوار" class="input-field">
+            <div class="md:col-span-1 flex items-center">
+              <input type="checkbox" id="newAmmoIsVisible" v-model="newAmmunitionForm.isVisible" class="form-checkbox h-5 w-5 text-blue-500 bg-gray-800 border-gray-600 rounded focus:ring-blue-400">
+              <label for="newAmmoIsVisible" class="ml-2 text-sm">در فروشگاه نمایش داده شود</label>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm mb-1">عکس مهمات (اختیاری، کمتر از 5MB):</label>
+              <input type="file" @change="handleAmmunitionImageUpload($event, 'new')" id="newAmmoImageFile" accept="image/jpeg,image/png,image/gif" class="input-field file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+              <img v-if="newAmmunitionForm.imagePreview" :src="newAmmunitionForm.imagePreview" alt="پیش‌نمایش" class="mt-2 h-20 w-20 object-cover rounded border border-gray-500">
+               <button v-if="newAmmunitionForm.imagePreview" @click="clearAmmunitionImagePreview('new')" class="text-xs text-red-400 hover:text-red-300 mt-1">حذف پیش‌نمایش</button>
+            </div>
+            <div class="md:col-span-3 text-right">
+              <button @click="saveNewAmmunition" class="btn-primary">ایجاد مهمات</button>
+            </div>
+          </div>
+
+          <h3 class="text-xl font-semibold mb-4">لیست مهمات موجود</h3>
+          <div class="overflow-x-auto">
+            <table class="admin-table w-full compact-table">
+              <thead><tr><th>عکس</th><th>نام</th><th>قیمت</th><th>سلامت</th><th>خط دفاعی</th><th>Max/دیوار</th><th>نمایش</th><th>عملیات</th></tr></thead>
+              <tbody>
+                <tr v-for="ammo in gameAmmunitions" :key="ammo.id">
+                  <td><img :src="ammo.image || 'https://via.placeholder.com/40?text=N/A'" :alt="ammo.name" class="h-10 w-10 object-cover rounded"></td>
+                  <td>{{ ammo.name }}</td>
+                  <td class="text-center">{{ ammo.price }}</td>
+                  <td class="text-center">{{ ammo.health }}</td>
+                  <td class="text-center">{{ ammo.defenseLine }}</td>
+                  <td class="text-center">{{ ammo.maxPerWall }}</td>
+                  <td class="text-center" :class="ammo.isVisible ? 'text-green-400':'text-gray-500'">{{ ammo.isVisible ? 'بله' : 'خیر' }}</td>
+                  <td class="text-center whitespace-nowrap">
+                    <button @click="openEditAmmunitionModal(ammo)" class="btn-secondary text-xs px-2 py-1 mr-1">ویرایش</button>
+                    <button @click="deleteGameAmmunition(ammo.id)" class="btn-danger text-xs px-2 py-1">حذف</button>
+                  </td>
+                </tr>
+                <tr v-if="!gameAmmunitions.length"><td colspan="8" class="text-center py-3">هیچ مهماتی یافت نشد.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Edit Ammunition Modal -->
+          <div v-if="editingAmmunition" class="modal-backdrop">
+            <div class="modal-content">
+              <h4 class="text-lg font-bold mb-3">ویرایش مهمات: {{ editingAmmunition.name }}</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                <input v-model.trim="editingAmmunition.name" placeholder="نام مهمات" class="input-field">
+                <input v-model.number="editingAmmunition.price" type="number" min="0" placeholder="قیمت" class="input-field">
+                <input v-model.number="editingAmmunition.health" type="number" min="1" placeholder="سلامت پایه" class="input-field">
+                <input v-model.number="editingAmmunition.defenseLine" type="number" min="1" placeholder="خط دفاعی" class="input-field">
+                <input v-model.number="editingAmmunition.maxPerWall" type="number" min="1" placeholder="حداکثر/دیوار" class="input-field">
+                <div class="flex items-center">
+                  <input type="checkbox" :id="'editAmmoIsVisible'+editingAmmunition.id" v-model="editingAmmunition.isVisible" class="form-checkbox h-5 w-5">
+                  <label :for="'editAmmoIsVisible'+editingAmmunition.id" class="ml-2 text-sm">نمایش در فروشگاه</label>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm mb-1">عکس مهمات (اختیاری، برای تغییر یا افزودن):</label>
+                  <input type="file" @change="handleAmmunitionImageUpload($event, 'edit')" id="editAmmoImageFile" accept="image/jpeg,image/png,image/gif" class="input-field file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                  <div class="mt-2 flex items-center">
+                    <img v-if="editingAmmunition.imagePreview" :src="editingAmmunition.imagePreview" alt="پیش‌نمایش" class="h-20 w-20 object-cover rounded border border-gray-500">
+                    <p v-else-if="editingAmmunition.image" class="text-xs text-gray-400">عکس فعلی: {{ editingAmmunition.image.split('/').pop() }}</p>
+                    <p v-else class="text-xs text-gray-400">بدون عکس</p>
+                    <button v-if="editingAmmunition.imagePreview || editingAmmunition.image" @click="clearAmmunitionImagePreview('edit')" class="text-xs text-red-400 hover:text-red-300 ml-2">حذف/تغییر عکس</button>
+                  </div>
+                </div>
+              </div>
+              <div class="flex justify-end space-x-2 mt-5">
+                <button @click="cancelEditAmmunition" class="btn-secondary">انصراف</button>
+                <button @click="saveAmmunitionChanges" class="btn-primary">ذخیره تغییرات</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Tab Content -->
+        <div v-if="gameManagementActiveTab === 'settings'">
+          <h3 class="text-xl font-semibold mb-4">تنظیمات قیمت‌گذاری</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-gray-700 p-4 rounded-lg">
+              <h4 class="text-lg font-medium mb-2">قیمت پیش‌فرض املاک (Tile)</h4>
+              <p class="text-xs text-gray-400 mb-2">این قیمت برای املاک بدون صاحب که جدیداً خریداری می‌شوند اعمال می‌شود.</p>
+              <label class="block text-sm mb-1">نقشه مورد نظر (اختیاری، برای اعمال قیمت فقط روی آن نقشه):</label>
+              <select v-model="tilePriceSettings.mapIdForPrice" class="input-field w-full mb-2">
+                  <option value="">همه نقشه‌های فعال (پیش‌فرض)</option>
+                  <option v-for="map in gameMaps.filter(m => m.isActive)" :key="map.id" :value="map.id">{{ map.name }}</option>
+              </select>
+              <label class="block text-sm mb-1">قیمت پیش‌فرض هر ملک (امتیاز):</label>
+              <input v-model.number="tilePriceSettings.defaultTilePrice" type="number" min="0" class="input-field w-full mb-3">
+              <button @click="saveTilePriceSettings" class="btn-primary w-full">ذخیره قیمت املاک</button>
+            </div>
+            <div class="bg-gray-700 p-4 rounded-lg">
+              <h4 class="text-lg font-medium mb-2">هزینه ارتقا دیوارها (نمایشی)</h4>
+              <p class="text-xs text-gray-400 mb-2">این هزینه‌ها در حال حاضر در کد برنامه ثابت هستند. برای تغییر، نیاز به ویرایش کد بک‌اند است.</p>
+              <ul>
+                <li v-for="(cost, type) in wallUpgradeSettings" :key="type" v-if="cost.next" class="mb-1">
+                  <span class="capitalize">{{ type }}</span> به {{ cost.next }}: {{ cost.cost }} امتیاز (سلامت جدید: {{cost.health}})
+                </li>
+              </ul>
+              <!-- <button @click="saveWallUpgradeCosts" class="btn-primary w-full mt-3" disabled>ذخیره هزینه دیوارها (غیرفعال)</button> -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Reset Tab Content -->
+        <div v-if="gameManagementActiveTab === 'reset'">
+            <h3 class="text-xl font-semibold mb-4 text-red-500">ریست کردن اطلاعات بازی برای یک نقشه</h3>
+            <div class="bg-gray-700 p-6 rounded-lg max-w-md mx-auto">
+                <p class="text-yellow-400 text-sm mb-3">هشدار: این عمل تمام مالکیت‌های املاک، دیوارها، مهمات مستقر شده و امواج حمله مربوط به نقشه انتخاب شده را حذف و بازی را به حالت اولیه بازمی‌گرداند. این عمل غیرقابل بازگشت است.</p>
+                <label for="mapToResetSelect" class="block text-sm font-medium text-gray-300 mb-1">انتخاب نقشه برای ریست:</label>
+                <select id="mapToResetSelect" v-model="mapToReset" class="input-field w-full mb-4">
+                    <option value="">-- انتخاب نقشه --</option>
+                    <option v-for="map in gameMaps" :key="map.id" :value="map.id">{{ map.name }} (ID: {{ map.id }})</option>
+                </select>
+                <button @click="resetGameDataForMap" class="btn-danger w-full" :disabled="!mapToReset">ریست کامل اطلاعات این نقشه</button>
+            </div>
+        </div>
+
+      </section>
+      <!-- End Territory Defense Game Management Section -->
+
+      </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+  <script src="/js/socket-manager.js"></script>
+  <script src="/js/admin-users-mixin.js"></script>
+  <script src="/js/admin-announcements-mixin.js"></script>
+  <script src="/js/admin-groups-mixin.js"></script>
+  <script src="/js/admin-contents-mixin.js"></script>
+  <script src="/js/admin-shop-mixin.js"></script>
+  <script src="/js/admin-unique-items-mixin.js"></script>
+  <script src="/js/admin-features-mixin.js"></script>
+  <script src="/js/admin-radio-mixin.js"></script>
+  <script src="/js/admin-question-bank-mixin.js"></script> <!-- Added Question Bank Mixin -->
+  <script src="/js/admin-game-management-mixin.js"></script> <!-- New Game Management Mixin -->
+  <script src="/js/admin.js"></script>
+
+</body>
+</html>
