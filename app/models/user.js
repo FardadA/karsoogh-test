@@ -36,5 +36,14 @@ module.exports = (sequelize) => {
     return bcrypt.compare(pass, this.password);
   };
 
+  User.associate = (models) => {
+    User.belongsToMany(models.Group, {
+      through: models.GroupMember,
+      as: 'groups', // Changed alias to plural to avoid conflicts and be more descriptive
+      foreignKey: 'userId',
+      otherKey: 'groupId'
+    });
+  };
+
   return User;
 };

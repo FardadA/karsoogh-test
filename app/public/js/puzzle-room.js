@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to check the URL and load the puzzle room if necessary
     const loadPuzzleRoomFromURL = async () => {
         const path = window.location.pathname;
-        const match = path.match(/^\/rooms\/(.+)/);
+        const match = path.match(/^\/dashboard\/rooms\/(.+)/);
         if (match) {
             const identifier = match[1];
             // Hide all other sections and show the puzzle room
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="bg-gray-700 p-6 rounded-lg text-center">
             <p class="text-gray-300">رمز ورود به اتاق <strong class="text-yellow-400">${prizeRoom.name} (#${prizeRoom.roomNumber})</strong>:</p>
             <p class="text-4xl font-mono bg-gray-900 p-4 rounded-md my-4 tracking-widest">${prizeRoom.password}</p>
-            <a href="/rooms/${prizeRoom.uniqueIdentifier}" class="btn-primary">ورود به اتاق جدید</a>
+            <a href="/dashboard/rooms/${prizeRoom.uniqueIdentifier}" class="btn-primary">ورود به اتاق جدید</a>
         </div>
     `;
 

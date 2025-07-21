@@ -9,14 +9,13 @@ exports.renderRoom = async (req, res) => {
 
     try {
         const user = await sequelize.models.User.findByPk(userId, {
-            include: { model: Group, as: 'group' }
+            include: { model: Group, as: 'groups' }
         });
 
-        if (!user || !user.group) {
-            // This should ideally redirect to a page explaining they need to be in a group
+        if (!user || !user.groups || user.groups.length === 0) {
             return res.status(403).json({ message: 'برای دسترسی به این بخش باید عضو یک گروه باشید.' });
         }
-        const groupId = user.group.id;
+        const groupId = user.groups[0].id;
 
         const room = await Room.findOne({
             where: {
@@ -28,7 +27,7 @@ exports.renderRoom = async (req, res) => {
         });
 
         if (!room) {
-            return res.status(404).render('error', { message: 'اتاق معمای مورد نظر یافت نشد.' });
+            return res.status(404).json({ message: 'اتاق معمای مورد نظر یافت نشد.' });
         }
 
         // Find or create the status for this group in this room
@@ -55,7 +54,7 @@ exports.renderRoom = async (req, res) => {
 
     } catch (error) {
         console.error(`Error rendering room ${identifier}:`, error);
-        res.status(500).render('error', { message: 'خطا در بارگذاری اتاق معما.' });
+        res.status(500).json({ message: 'خطا در بارگذاری اتاق معما.' });
     }
 };
 
