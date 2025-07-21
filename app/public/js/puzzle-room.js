@@ -108,21 +108,26 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     const createCorrectedView = (room, status) => {
-        let prizeContent = '';
+        let prizeHtml = '';
         if (status.prizeClaimed === false) {
-            prizeContent = `<button id="claim-prize-btn" class="btn-primary mt-4">دریافت جایزه</button>`;
+            prizeHtml = `
+                <div class="mt-8 text-center border-t-2 border-gray-700 pt-6" id="prize-section">
+                     <h3 class="text-xl font-bold">تبریک! شما یک جایزه دارید.</h3>
+                     <div id="prize-content">
+                        <button id="claim-prize-btn" class="btn-primary mt-4">دریافت جایزه</button>
+                     </div>
+                </div>`;
         } else if (status.chosenPrizeRoomId && status.chosenPrizeRoom) {
-            prizeContent = `
-                <p class="text-gray-300 mt-2">رمز ورود به اتاق بعدی شما آماده است.</p>
-                <button id="show-prize-btn" class="btn-secondary mt-4">مشاهده رمز اتاق مقصد</button>
-            `;
-        } else {
-            prizeContent = `<p>جایزه شما قبلا دریافت شده است.</p>`;
+            prizeHtml = `
+                <div class="mt-8 text-center border-t-2 border-gray-700 pt-6" id="prize-section">
+                     <h3 class="text-xl font-bold">جایزه شما دریافت شد!</h3>
+                     <div id="prize-content">
+                        <p class="text-gray-300 mt-2">رمز ورود به اتاق بعدی شما آماده است.</p>
+                        <button id="show-prize-btn" class="btn-secondary mt-4">مشاهده رمز اتاق مقصد</button>
+                     </div>
+                </div>`;
         }
-
-        const prizeHeader = status.prizeClaimed === false
-            ? 'تبریک! شما یک جایزه دارید.'
-            : 'جایزه شما دریافت شد!';
+        // If prize is claimed but no room chosen yet (edge case), show nothing.
 
         return `
             <h2 class="text-3xl font-bold text-center mb-6">${room.name} (#${room.roomNumber})</h2>
@@ -132,12 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="text-4xl font-bold text-yellow-400 my-4">${status.score} <span class="text-lg text-gray-300">/ ${room.maxPoints}</span></p>
                 <p class="text-gray-300">این امتیاز به مجموع امتیازات گروه شما اضافه شد.</p>
             </div>
-            <div class="mt-8 text-center border-t-2 border-gray-700 pt-6">
-                <div id="prize-container">
-                    <h3 class="text-xl font-bold">${prizeHeader}</h3>
-                    <div id="prize-content">${prizeContent}</div>
-                </div>
-            </div>
+            ${prizeHtml}
         `;
     };
 
@@ -202,12 +202,13 @@ document.addEventListener('DOMContentLoaded', () => {
             window.setLoadingState(true);
             try {
                 const response = await axios.post(`/api/puzzle-room/${status.id}/claim-prize`);
-                const prizeContent = document.getElementById('prize-content');
+                const prizeSection = document.getElementById('prize-section');
                 if (response.data.prizeOptions && response.data.prizeOptions.length > 0) {
-                    prizeContent.innerHTML = createPrizeSelectionView(response.data.prizeOptions, status);
+                    // Replace the entire section content with the prize selection view
+                    prizeSection.innerHTML = createPrizeSelectionView(response.data.prizeOptions, status);
                     attachSelectPrizeListeners(status);
                 } else {
-                    prizeContent.innerHTML = `<p class="text-center text-yellow-400 mt-4">متاسفانه در حال حاضر جایزه‌ای برای شما وجود ندارد. بعدا تلاش کنید!</p>`;
+                    prizeSection.innerHTML = `<p class="text-center text-yellow-400 mt-4">متاسفانه در حال حاضر جایزه‌ای برای شما وجود ندارد. بعدا تلاش کنید!</p>`;
                 }
             } catch (error) {
                 window.sendNotification('error', error.response?.data?.message || 'خطا در درخواست جایزه.');
@@ -224,8 +225,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.setLoadingState(true);
                 try {
                     const response = await axios.post(`/api/puzzle-room/${originalStatus.id}/select-prize`, { chosenRoomId });
-                    const prizeContainer = document.getElementById('prize-container');
-                    prizeContainer.innerHTML = createPrizeDisplayView(response.data.chosenPrizeRoom);
+                    const prizeSection = document.getElementById('prize-section');
+                    prizeSection.innerHTML = createPrizeDisplayView(response.data.chosenPrizeRoom);
                     window.sendNotification('success', response.data.message);
                 } catch (error) {
                      window.sendNotification('error', error.response?.data?.message || 'خطا در انتخاب جایزه.');
