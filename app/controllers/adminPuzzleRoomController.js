@@ -32,7 +32,7 @@ exports.createRoom = async (req, res) => {
             subject,
             difficulty,
             maxPoints,
-            questionImage: `/uploads/puzzle_questions/${req.file.filename}`
+            questionImage: `/uploads/${req.file.filename}`
         });
         res.status(201).json(newRoom);
     } catch (error) {
@@ -67,7 +67,7 @@ exports.updateRoom = async (req, res) => {
                     fs.unlinkSync(oldImagePath);
                 }
             }
-            updateData.questionImage = `/uploads/puzzle_questions/${req.file.filename}`;
+            updateData.questionImage = `/uploads/${req.file.filename}`;
         }
 
         await room.update(updateData);

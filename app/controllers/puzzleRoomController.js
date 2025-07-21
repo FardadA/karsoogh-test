@@ -93,7 +93,7 @@ exports.submitAnswer = async (req, res) => {
             return res.status(400).json({ message: 'شما در حال حاضر نمی‌توانید برای این اتاق پاسخی ارسال کنید.' });
         }
 
-        groupStatus.answerFile = `/uploads/puzzle_answers/${req.file.filename}`;
+        groupStatus.answerFile = `/uploads/${req.file.filename}`;
         groupStatus.status = 'pending_correction';
         await groupStatus.save();
 
