@@ -5,18 +5,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Core Logic ---
 
-    const headerButtons = {
-        menu: document.getElementById('open-mobile-menu'),
-        notifications: document.getElementById('btn-notifications'),
-        logout: document.querySelector('a[href="/logout"]')
+    const uiElements = {
+        headerMenu: document.getElementById('open-mobile-menu'),
+        headerNotifications: document.getElementById('btn-notifications'),
+        headerLogout: document.querySelector('a[href="/logout"]'),
+        desktopMenu: document.getElementById('desktop-menu'),
+        mobileMenuContainer: document.getElementById('mobile-menu') // The whole container
     };
 
-    const toggleHeaderButtons = (show) => {
-        for (const key in headerButtons) {
-            if (headerButtons[key]) {
-                headerButtons[key].style.display = show ? '' : 'none';
-            }
-        }
+    const toggleMainUI = (show) => {
+        const displayStyle = show ? '' : 'none';
+        uiElements.headerMenu.style.display = displayStyle;
+        uiElements.headerNotifications.style.display = displayStyle;
+        uiElements.headerLogout.style.display = displayStyle;
+        uiElements.desktopMenu.style.display = displayStyle;
     };
 
     // Function to check the URL and load the puzzle room if necessary
@@ -25,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const match = path.match(/^\/dashboard\/rooms\/(.+)/);
         if (match) {
             const identifier = match[1];
-            toggleHeaderButtons(false); // Hide buttons
+            toggleMainUI(false); // Hide main UI elements
             // Use the globally exposed function from tabs.js to handle section switching
             if (window.showSection) {
                 window.showSection('puzzle-room');
@@ -274,9 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Also, ensure header buttons are shown when navigating away via menu
     document.querySelectorAll('.menu-item').forEach(item => {
         item.addEventListener('click', () => {
-            if (!window.location.pathname.startsWith('/dashboard/rooms/')) {
-                toggleHeaderButtons(true);
-            }
+            // A small delay to ensure the URL has changed before checking
+            setTimeout(() => {
+                if (!window.location.pathname.startsWith('/dashboard/rooms/')) {
+                    toggleMainUI(true);
+                }
+            }, 50);
         });
     });
 });
