@@ -145,6 +145,12 @@ new Vue({
                 await this.fetchCurrencies();
                 await this.fetchUniqueItems();
                 break;
+            case 'puzzle_room_management':
+                if (typeof this.fetchPuzzleRooms === 'function') await this.fetchPuzzleRooms();
+                break;
+            case 'puzzle_room_correction':
+                if (typeof this.fetchPuzzleSubmissions === 'function') await this.fetchPuzzleSubmissions();
+                break;
             case 'question_bank_questions':
                 if (typeof this.fetchQuestions === 'function') await this.fetchQuestions();
                 break;

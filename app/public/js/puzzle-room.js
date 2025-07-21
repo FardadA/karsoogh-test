@@ -5,24 +5,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Core Logic ---
 
+    const headerButtons = {
+        menu: document.getElementById('open-mobile-menu'),
+        notifications: document.getElementById('btn-notifications'),
+        logout: document.querySelector('a[href="/logout"]')
+    };
+
+    const toggleHeaderButtons = (show) => {
+        for (const key in headerButtons) {
+            if (headerButtons[key]) {
+                headerButtons[key].style.display = show ? '' : 'none';
+            }
+        }
+    };
+
     // Function to check the URL and load the puzzle room if necessary
     const loadPuzzleRoomFromURL = async () => {
         const path = window.location.pathname;
         const match = path.match(/^\/dashboard\/rooms\/(.+)/);
         if (match) {
             const identifier = match[1];
+            toggleHeaderButtons(false); // Hide buttons
             // Use the globally exposed function from tabs.js to handle section switching
             if (window.showSection) {
                 window.showSection('puzzle-room');
-                // Manually update title as this section is not in the menu
                 const pageTitle = document.getElementById('page-title');
-                if(pageTitle) pageTitle.textContent = 'اتاق معMA';
+                if(pageTitle) pageTitle.textContent = 'اتاق معما';
             } else {
-                // Fallback for safety
                 document.querySelectorAll('main .content-section').forEach(sec => sec.classList.remove('active'));
                 puzzleRoomSection.classList.add('active');
             }
             await fetchAndRenderPuzzleRoom(identifier);
+        } else {
+            toggleHeaderButtons(true); // Show buttons if not in a puzzle room
         }
     };
 
@@ -239,6 +254,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
+    const handleRefresh = async () => {
+        const path = window.location.pathname;
+        const match = path.match(/^\/dashboard\/rooms\/(.+)/);
+        if (match) {
+            window.setLoadingState(true);
+            const identifier = match[1];
+            await fetchAndRenderPuzzleRoom(identifier);
+            window.setLoadingState(false);
+        }
+    };
+
+    document.getElementById('btn-refresh').addEventListener('click', handleRefresh);
+
     // --- Initialization ---
     loadPuzzleRoomFromURL();
+
+    // Also, ensure header buttons are shown when navigating away via menu
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (!window.location.pathname.startsWith('/dashboard/rooms/')) {
+                toggleHeaderButtons(true);
+            }
+        });
+    });
 });
