@@ -48,6 +48,11 @@ db.AmmunitionInventory     = require('./AmmunitionInventory')(sequelize, DataTyp
 db.DeployedAmmunition      = require('./DeployedAmmunition')(sequelize, DataTypes);
 db.AttackWave              = require('./AttackWave')(sequelize, DataTypes);
 
+// Puzzle Room Models
+db.Room                    = require('./Room')(sequelize, DataTypes);
+db.GroupRoomStatus         = require('./GroupRoomStatus')(sequelize, DataTypes);
+
+
 Object.values(db).forEach(model => {
   if (typeof model.associate === 'function') {
     model.associate(db);

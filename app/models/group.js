@@ -63,6 +63,12 @@ module.exports = (sequelize, DataTypes) => {
     Group.hasMany(models.Wallet, { foreignKey: 'groupId' });
     
     Group.hasMany(models.UniqueItem, { as: 'ownedItems', foreignKey: 'ownerGroupId' });
+
+    // For Puzzle Rooms
+    Group.hasMany(models.GroupRoomStatus, {
+      foreignKey: 'groupId',
+      as: 'puzzleRoomStatuses'
+    });
   };
 
   return Group;

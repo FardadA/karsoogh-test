@@ -11,7 +11,8 @@ new Vue({
     adminFeaturesMixin,
     adminRadioMixin,
     adminQuestionBankMixin, // Added Question Bank Mixin
-    adminGameManagementMixin // New Mixin for Territory Defense Game Management
+    adminGameManagementMixin, // New Mixin for Territory Defense Game Management
+    adminPuzzleRoomMixin // --- ADDED PUZZLE ROOM MIXIN ---
   ],
   data: {
     editingId: null,
@@ -24,6 +25,8 @@ new Vue({
       { key: 'items', label: 'فروشگاه' },
       { key: 'contents', label: 'محتواها' },
       { key: 'game_management', label: 'مدیریت دفاع از قلمرو', featureFlag: 'admin_game_management' }, // New Admin Section
+      { key: 'puzzle_room_management', label: 'مدیریت اتاق معما' },
+      { key: 'puzzle_room_correction', label: 'تصحیح معما' },
       { key: 'question_bank_questions', label: 'طرح سوال (بانک سوال)' },
       { key: 'question_bank_correction', label: 'تصحیح سوالات (بانک سوال)' },
       { key: 'question_bank_settings', label: 'تنظیمات بانک سوال' },

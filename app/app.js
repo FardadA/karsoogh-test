@@ -153,6 +153,12 @@ app.use('/admin/api/question-bank', isAdmin, adminQuestionBankRouter);
 const questionBankUserRouter = require('./routes/questionBank');
 app.use('/api/question-bank', isUser, questionBankUserRouter);
 
+// --- Puzzle Room Routes ---
+const puzzleRoomUserRouter = require('./routes/puzzleRoom');
+app.use('/rooms', isUser, puzzleRoomUserRouter);
+const adminPuzzleRoomRouter = require('./routes/adminPuzzleRoom');
+app.use('/admin/api/puzzle-room', isAdmin, adminPuzzleRoomRouter);
+
 // --- Territory Defense Game Routes ---
 const gameUserRoutes = require('./routes/game'); // User routes for the game
 app.use('/api/game', isUser, gameUserRoutes);

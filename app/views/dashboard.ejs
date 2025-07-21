@@ -209,6 +209,18 @@
         
       <section id="radio" class="content-section hidden p-4"></section>
 
+      <section id="puzzle-room" class="content-section hidden">
+        <!-- This section will be dynamically populated by /js/puzzle-room.js -->
+        <div id="puzzle-room-content" class="max-w-4xl mx-auto text-white">
+            <!-- Loading spinner -->
+            <div id="puzzle-room-loading" class="text-center py-10">
+                <div class="w-12 h-12 border-t-4 border-blue-500 border-solid rounded-full animate-spin mx-auto"></div>
+                <p class="mt-4">در حال بارگذاری اتاق معما...</p>
+            </div>
+            <!-- Dynamic content will be injected here -->
+        </div>
+      </section>
+
       <section id="territory_defense" class="content-section hidden">
         <div id="game-territory-loading" class="text-center text-gray-300 py-8">در حال بارگذاری اطلاعات بازی...</div>
         <div id="game-territory-content" class="hidden"></div>
@@ -237,5 +249,6 @@
   <script src="/js/radio-listener.js"></script>
   <script src="/js/game-territory.js"></script>
   <script src="/js/game-ammunition.js"></script>
+  <script src="/js/puzzle-room.js"></script>
   </body>
 </html>
