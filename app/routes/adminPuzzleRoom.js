@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 // Configure Multer for question image uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'app/public/uploads/');
+    cb(null, 'public/uploads/');
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = uuidv4();
