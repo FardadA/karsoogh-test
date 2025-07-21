@@ -1064,7 +1064,7 @@
                     </div>
                 </div>
                  <div class="mt-4 border-t border-gray-600 pt-4">
-                    <label :for="'score-input-' + selectedSubmissionForDetails.id" class="block font-semibold mb-2">ثبت نمره (حداکثر: {{selectedSubmissionForDetails.room.maxPoints}})</label>
+                    <label :for="'score-input-' + selectedSubmissionForDetails.id" class="block font-semibold mb-2">ثبت نمره (حداکثر: {{ selectedSubmissionForDetails.room.maxPoints }})</label>
                     <input :id="'score-input-' + selectedSubmissionForDetails.id" type="number" v-model.number="correctionForm.score" class="input-field w-full" :max="selectedSubmissionForDetails.room.maxPoints" min="0">
                  </div>
             </div>

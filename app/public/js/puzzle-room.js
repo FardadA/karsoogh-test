@@ -106,25 +106,21 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     const createCorrectedView = (room, status) => {
-        let prizeSection = '';
+        let prizeContent = '';
         if (status.prizeClaimed === false) {
-            prizeSection = `
-                <div class="mt-8 text-center border-t-2 border-gray-700 pt-6">
-                    <h3 class="text-xl font-bold">تبریک! شما یک جایزه دارید.</h3>
-                    <button id="claim-prize-btn" class="btn-primary mt-4">دریافت جایزه</button>
-                </div>
-            `;
+            prizeContent = `<button id="claim-prize-btn" class="btn-primary mt-4">دریافت جایزه</button>`;
         } else if (status.chosenPrizeRoomId && status.chosenPrizeRoom) {
-             prizeSection = `
-                <div class="mt-8 text-center border-t-2 border-gray-700 pt-6">
-                    <h3 class="text-xl font-bold">جایزه شما دریافت شد!</h3>
-                    <p class="text-gray-300 mt-2">رمز ورود به اتاق بعدی شما آماده است.</p>
-                    <button id="show-prize-btn" class="btn-secondary mt-4">مشاهده رمز اتاق مقصد</button>
-                </div>
+            prizeContent = `
+                <p class="text-gray-300 mt-2">رمز ورود به اتاق بعدی شما آماده است.</p>
+                <button id="show-prize-btn" class="btn-secondary mt-4">مشاهده رمز اتاق مقصد</button>
             `;
         } else {
-             prizeSection = `<div class="mt-8 text-center border-t-2 border-gray-700 pt-6"><p>جایزه شما قبلا دریافت شده است.</p></div>`;
+            prizeContent = `<p>جایزه شما قبلا دریافت شده است.</p>`;
         }
+
+        const prizeHeader = status.prizeClaimed === false
+            ? 'تبریک! شما یک جایزه دارید.'
+            : 'جایزه شما دریافت شد!';
 
         return `
             <h2 class="text-3xl font-bold text-center mb-6">${room.name} (#${room.roomNumber})</h2>
@@ -134,14 +130,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="text-4xl font-bold text-yellow-400 my-4">${status.score} <span class="text-lg text-gray-300">/ ${room.maxPoints}</span></p>
                 <p class="text-gray-300">این امتیاز به مجموع امتیازات گروه شما اضافه شد.</p>
             </div>
-            <div id="prize-container">${prizeSection}</div>
+            <div class="mt-8 text-center border-t-2 border-gray-700 pt-6">
+                <div id="prize-container">
+                    <h3 class="text-xl font-bold">${prizeHeader}</h3>
+                    <div id="prize-content">${prizeContent}</div>
+                </div>
+            </div>
         `;
     };
 
     const createPrizeSelectionView = (prizeOptions, status) => `
         <h3 class="text-2xl font-bold text-center mb-4">یک اتاق را به عنوان جایزه انتخاب کنید!</h3>
         <p class="text-gray-400 text-center mb-6">با انتخاب هر اتاق، رمز ورود آن برای شما نمایش داده خواهد شد.</p>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             ${prizeOptions.map(room => `
                 <div class="bg-gray-700 p-4 rounded-lg text-center">
                     <h4 class="text-xl font-bold">${room.name}</h4>
@@ -199,12 +200,12 @@ document.addEventListener('DOMContentLoaded', () => {
             window.setLoadingState(true);
             try {
                 const response = await axios.post(`/api/puzzle-room/${status.id}/claim-prize`);
-                const prizeContainer = document.getElementById('prize-container');
+                const prizeContent = document.getElementById('prize-content');
                 if (response.data.prizeOptions && response.data.prizeOptions.length > 0) {
-                    prizeContainer.innerHTML = createPrizeSelectionView(response.data.prizeOptions, status);
+                    prizeContent.innerHTML = createPrizeSelectionView(response.data.prizeOptions, status);
                     attachSelectPrizeListeners(status);
                 } else {
-                    prizeContainer.innerHTML = `<p class="text-center text-yellow-400 mt-4">متاسفانه در حال حاضر جایزه‌ای برای شما وجود ندارد. بعدا تلاش کنید!</p>`;
+                    prizeContent.innerHTML = `<p class="text-center text-yellow-400 mt-4">متاسفانه در حال حاضر جایزه‌ای برای شما وجود ندارد. بعدا تلاش کنید!</p>`;
                 }
             } catch (error) {
                 window.sendNotification('error', error.response?.data?.message || 'خطا در درخواست جایزه.');
