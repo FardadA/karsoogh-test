@@ -1,5 +1,7 @@
 const { Room, Group, GroupRoomStatus, sequelize } = require('../models');
 const { Op } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
 
 // GET /rooms/:identifier
 // Renders the puzzle room page for the user's group.
@@ -71,13 +73,13 @@ exports.submitAnswer = async (req, res) => {
 
     try {
         const user = await sequelize.models.User.findByPk(userId, {
-            include: { model: Group, as: 'group' }
+            include: { model: Group, as: 'groups' }
         });
 
-        if (!user || !user.group) {
+        if (!user || !user.groups || user.groups.length === 0) {
             return res.status(403).json({ message: 'برای ارسال پاسخ باید عضو یک گروه باشید.' });
         }
-        const groupId = user.group.id;
+        const groupId = user.groups[0].id;
 
         const groupStatus = await GroupRoomStatus.findOne({
             where: {
@@ -129,12 +131,12 @@ exports.claimPrize = async (req, res) => {
 
     try {
         const user = await sequelize.models.User.findByPk(userId, {
-            include: { model: Group, as: 'group' }
+            include: { model: Group, as: 'groups' }
         });
-        if (!user || !user.group) {
+        if (!user || !user.groups || user.groups.length === 0) {
             return res.status(403).json({ message: 'برای این عملیات باید عضو یک گروه باشید.' });
         }
-        const groupId = user.group.id;
+        const groupId = user.groups[0].id;
 
         const currentStatus = await GroupRoomStatus.findByPk(groupRoomStatusId);
 
@@ -196,12 +198,12 @@ exports.selectPrize = async (req, res) => {
 
     try {
         const user = await sequelize.models.User.findByPk(userId, {
-            include: [{ model: Group, as: 'group' }]
+            include: [{ model: Group, as: 'groups' }]
         });
-        if (!user || !user.group) {
+        if (!user || !user.groups || user.groups.length === 0) {
             return res.status(403).json({ message: 'برای این عملیات باید عضو یک گروه باشید.' });
         }
-        const groupId = user.group.id;
+        const groupId = user.groups[0].id;
 
         const groupStatus = await GroupRoomStatus.findByPk(groupRoomStatusId);
 
