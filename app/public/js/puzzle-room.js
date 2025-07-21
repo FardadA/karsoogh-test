@@ -162,19 +162,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData();
             formData.append('answerFile', fileInput.files[0]);
 
-            showLoading();
+            window.setLoadingState(true);
             try {
                 const response = await axios.post(`/api/puzzle-room/${room.id}/submit-answer`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                // The socket event will handle the UI update, but we can show a success message here
-                showAlert('success', response.data.message);
+                window.sendNotification('success', response.data.message);
                 renderPuzzleRoom(room, response.data.status); // Re-render with new status
             } catch (error) {
                 const errorMessage = error.response?.data?.message || 'خطا در آپلود فایل.';
-                showAlert('error', errorMessage);
+                window.sendNotification('error', errorMessage);
             } finally {
-                hideLoading();
+                window.setLoadingState(false);
             }
         });
     };
@@ -182,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const attachClaimPrizeListener = (room, status) => {
         const btn = document.getElementById('claim-prize-btn');
         btn.addEventListener('click', async () => {
-            showLoading();
+            window.setLoadingState(true);
             try {
                 const response = await axios.post(`/api/puzzle-room/${status.id}/claim-prize`);
                 const prizeContainer = document.getElementById('prize-container');
@@ -193,9 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     prizeContainer.innerHTML = `<p class="text-center text-yellow-400 mt-4">متاسفانه در حال حاضر جایزه‌ای برای شما وجود ندارد. بعدا تلاش کنید!</p>`;
                 }
             } catch (error) {
-                showAlert('error', error.response?.data?.message || 'خطا در درخواست جایزه.');
+                window.sendNotification('error', error.response?.data?.message || 'خطا در درخواست جایزه.');
             } finally {
-                hideLoading();
+                window.setLoadingState(false);
             }
         });
     };
@@ -204,16 +203,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.select-prize-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const chosenRoomId = e.target.dataset.roomId;
-                showLoading();
+                window.setLoadingState(true);
                 try {
                     const response = await axios.post(`/api/puzzle-room/${originalStatus.id}/select-prize`, { chosenRoomId });
                     const prizeContainer = document.getElementById('prize-container');
                     prizeContainer.innerHTML = createPrizeDisplayView(response.data.chosenPrizeRoom);
-                    showAlert('success', response.data.message);
+                    window.sendNotification('success', response.data.message);
                 } catch (error) {
-                     showAlert('error', error.response?.data?.message || 'خطا در انتخاب جایزه.');
+                     window.sendNotification('error', error.response?.data?.message || 'خطا در انتخاب جایزه.');
                 } finally {
-                    hideLoading();
+                    window.setLoadingState(false);
                 }
             });
         });
