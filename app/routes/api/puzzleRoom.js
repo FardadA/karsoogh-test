@@ -40,20 +40,11 @@ const ioMiddleware = (req, res, next) => {
   next();
 };
 
-// --- User-facing Routes for Puzzle Rooms ---
+// --- User-facing API Routes for Puzzle Rooms ---
 
-// GET /rooms/:identifier - This route handles viewing a puzzle room.
-// The identifier can be the room's 'name' or 'uniqueIdentifier'.
 router.get('/:identifier', ioMiddleware, puzzleRoomController.renderRoom);
-
-// POST /rooms/:roomId/submit-answer - For uploading an answer file.
 router.post('/:roomId/submit-answer', ioMiddleware, upload.single('answerFile'), puzzleRoomController.submitAnswer);
-
-// POST /rooms/:groupRoomStatusId/claim-prize - To initiate the prize claiming process.
 router.post('/:groupRoomStatusId/claim-prize', ioMiddleware, puzzleRoomController.claimPrize);
-
-// POST /rooms/:groupRoomStatusId/select-prize - To select the final prize room.
 router.post('/:groupRoomStatusId/select-prize', ioMiddleware, puzzleRoomController.selectPrize);
-
 
 module.exports = router;
