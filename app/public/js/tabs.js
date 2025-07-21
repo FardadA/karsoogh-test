@@ -94,6 +94,11 @@ document.addEventListener('DOMContentLoaded', function(){
     window.showSection = showSection; // Expose globally if needed by other scripts
 
     function initializeActiveTab() {
+        // --- FIX: Do not initialize a default tab if a puzzle room URL is active ---
+        if (window.location.pathname.startsWith('/dashboard/rooms/')) {
+            return;
+        }
+
         updateMenuItems(); // Ensure allMenuItems is populated before use
 
         const desktopMenuContainer = document.getElementById('desktop-menu');
