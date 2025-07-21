@@ -11,9 +11,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const match = path.match(/^\/dashboard\/rooms\/(.+)/);
         if (match) {
             const identifier = match[1];
-            // Hide all other sections and show the puzzle room
-            document.querySelectorAll('main .content-section').forEach(sec => sec.classList.remove('active'));
-            puzzleRoomSection.classList.add('active');
+            // Use the globally exposed function from tabs.js to handle section switching
+            if (window.showSection) {
+                window.showSection('puzzle-room');
+                // Manually update title as this section is not in the menu
+                const pageTitle = document.getElementById('page-title');
+                if(pageTitle) pageTitle.textContent = 'اتاق معMA';
+            } else {
+                // Fallback for safety
+                document.querySelectorAll('main .content-section').forEach(sec => sec.classList.remove('active'));
+                puzzleRoomSection.classList.add('active');
+            }
             await fetchAndRenderPuzzleRoom(identifier);
         }
     };
