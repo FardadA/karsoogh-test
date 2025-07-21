@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const puzzleRoomController = require('../controllers/puzzleRoomController');
+const puzzleRoomController = require('../../controllers/puzzleRoomController');
 const path = require('path');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
