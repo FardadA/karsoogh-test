@@ -150,23 +150,35 @@ exports.claimPrize = async (req, res) => {
             return res.status(400).json({ message: 'شما در حال حاضر نمی‌توانید جایزه دریافت کنید.' });
         }
 
-        // Find all rooms the group has already attempted or solved
-        const attemptedRoomIds = (await GroupRoomStatus.findAll({
-            where: { groupId: groupId },
-            attributes: ['roomId']
-        })).map(s => s.roomId);
+        // Find all room IDs that should be excluded from prize options
+        const excludedStatuses = await GroupRoomStatus.findAll({
+            where: {
+                groupId: groupId,
+                [Op.or]: [
+                    { status: ['pending_correction', 'corrected'] },
+                    { chosenPrizeRoomId: { [Op.ne]: null } }
+                ]
+            },
+            attributes: ['roomId', 'chosenPrizeRoomId']
+        });
 
-        // Find up to 3 prize rooms: one from each difficulty, that has not been attempted
+        const excludedRoomIds = new Set();
+        excludedStatuses.forEach(s => {
+            if(s.roomId) excludedRoomIds.add(s.roomId);
+            if(s.chosenPrizeRoomId) excludedRoomIds.add(s.chosenPrizeRoomId);
+        });
+
+        // Find up to 3 prize rooms: one from each difficulty, that is not excluded
         const prizeRooms = [];
         const difficulties = ['easy', 'medium', 'hard'];
 
         for (const difficulty of difficulties) {
             const room = await Room.findOne({
                 where: {
-                    id: { [Op.notIn]: attemptedRoomIds },
+                    id: { [Op.notIn]: Array.from(excludedRoomIds) },
                     difficulty: difficulty
                 },
-                order: sequelize.random(), // Pick a random one from the available pool
+                order: sequelize.random(), // Pick a random one
             });
             if (room) {
                 prizeRooms.push(room);

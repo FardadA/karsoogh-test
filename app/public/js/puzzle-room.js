@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="bg-gray-700 p-6 rounded-lg text-center">
             <p class="text-gray-300">رمز ورود به اتاق <strong class="text-yellow-400">${prizeRoom.name} (#${prizeRoom.roomNumber})</strong>:</p>
             <p class="text-4xl font-mono bg-gray-900 p-4 rounded-md my-4 tracking-widest">${prizeRoom.password}</p>
-            <a href="/dashboard/rooms/${prizeRoom.uniqueIdentifier}" class="btn-primary">ورود به اتاق جدید</a>
+            <p class="text-xs text-gray-400 mt-4">این رمز را کپی کرده و در ماجراجویی بزرگ‌تر خود استفاده کنید.</p>
         </div>
     `;
 
