@@ -154,9 +154,8 @@ const questionBankUserRouter = require('./routes/questionBank');
 app.use('/api/question-bank', isUser, questionBankUserRouter);
 
 // --- Puzzle Room Routes ---
-const puzzleRoomUserRouter = require('./routes/puzzleRoom');
-// This is now handled under the /dashboard route to match the URL structure
-// app.use('/rooms', isUser, puzzleRoomUserRouter);
+const puzzleRoomApiRouter = require('./routes/api/puzzleRoom');
+app.use('/api/puzzle-room', isUser, puzzleRoomApiRouter);
 const adminPuzzleRoomRouter = require('./routes/adminPuzzleRoom');
 app.use('/admin/api/puzzle-room', isAdmin, adminPuzzleRoomRouter);
 

@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to fetch data from the API and trigger rendering
     const fetchAndRenderPuzzleRoom = async (identifier) => {
         try {
-            const response = await axios.get(`/rooms/${identifier}`);
+            const response = await axios.get(`/api/puzzle-room/${identifier}`);
             currentRoomData = response.data;
             renderPuzzleRoom(currentRoomData.room, currentRoomData.status);
         } catch (error) {
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showLoading();
             try {
-                const response = await axios.post(`/rooms/${room.id}/submit-answer`, formData, {
+                const response = await axios.post(`/api/puzzle-room/${room.id}/submit-answer`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
                 // The socket event will handle the UI update, but we can show a success message here
@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', async () => {
             showLoading();
             try {
-                const response = await axios.post(`/rooms/${status.id}/claim-prize`);
+                const response = await axios.post(`/api/puzzle-room/${status.id}/claim-prize`);
                 const prizeContainer = document.getElementById('prize-container');
                 if (response.data.prizeOptions && response.data.prizeOptions.length > 0) {
                     prizeContainer.innerHTML = createPrizeSelectionView(response.data.prizeOptions, status);
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const chosenRoomId = e.target.dataset.roomId;
                 showLoading();
                 try {
-                    const response = await axios.post(`/rooms/${originalStatus.id}/select-prize`, { chosenRoomId });
+                    const response = await axios.post(`/api/puzzle-room/${originalStatus.id}/select-prize`, { chosenRoomId });
                     const prizeContainer = document.getElementById('prize-container');
                     prizeContainer.innerHTML = createPrizeDisplayView(response.data.chosenPrizeRoom);
                     showAlert('success', response.data.message);

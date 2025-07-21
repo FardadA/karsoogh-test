@@ -1,11 +1,10 @@
 const express = require('express');
 const router  = express.Router();
 const ctrl    = require('../controllers/userController');
-const puzzleRoomRouter = require('./puzzleRoom'); // Import puzzle room routes
 
 router.get('/', ctrl.renderDashboard);
 
-// Mount the puzzle room routes under /dashboard/rooms
-router.use('/rooms', puzzleRoomRouter);
+// Route to render the dashboard for any puzzle room URL, letting the frontend handle the rest.
+router.get('/rooms/:identifier', ctrl.renderDashboard);
 
 module.exports = router;
