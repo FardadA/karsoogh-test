@@ -153,6 +153,7 @@ exports.claimPrize = async (req, res) => {
             if(s.roomId) excludedRoomIds.add(s.roomId);
             if(s.chosenPrizeRoomId) excludedRoomIds.add(s.chosenPrizeRoomId);
         });
+        excludedRoomIds.add(currentStatus.roomId);
 
         const prizeRooms = [];
         const difficulties = ['easy', 'medium', 'hard'];
