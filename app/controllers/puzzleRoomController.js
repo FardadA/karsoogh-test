@@ -3,8 +3,7 @@ const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 
-// GET /rooms/:identifier
-// Renders the puzzle room page for the user's group.
+// GET /:identifier
 exports.renderRoom = async (req, res) => {
     const { identifier } = req.params;
     const { userId } = req.session;
@@ -32,7 +31,6 @@ exports.renderRoom = async (req, res) => {
             return res.status(404).json({ message: 'اتاق معمای مورد نظر یافت نشد.' });
         }
 
-        // Find or create the status for this group in this room
         const [groupStatus, created] = await GroupRoomStatus.findOrCreate({
             where: {
                 groupId: groupId,
@@ -46,9 +44,6 @@ exports.renderRoom = async (req, res) => {
             include: [{model: Room, as: 'chosenPrizeRoom'}]
         });
 
-        // We will not render a view directly, but send data to the main dashboard
-        // The dashboard will then show the puzzle room section based on this data.
-        // For now, let's send JSON data. The frontend JS will handle it.
         res.json({
             room: room,
             status: groupStatus
@@ -60,8 +55,7 @@ exports.renderRoom = async (req, res) => {
     }
 };
 
-// POST /rooms/:roomId/submit-answer
-// Handles the submission of an answer file for a puzzle.
+// POST /:roomId/submit-answer
 exports.submitAnswer = async (req, res) => {
     const { roomId } = req.params;
     const { userId } = req.session;
@@ -89,7 +83,6 @@ exports.submitAnswer = async (req, res) => {
         });
 
         if (!groupStatus || groupStatus.status !== 'unanswered') {
-             // Clean up uploaded file if the submission is not valid
             fs.unlinkSync(req.file.path);
             return res.status(400).json({ message: 'شما در حال حاضر نمی‌توانید برای این اتاق پاسخی ارسال کنید.' });
         }
@@ -98,14 +91,12 @@ exports.submitAnswer = async (req, res) => {
         groupStatus.status = 'pending_correction';
         await groupStatus.save();
 
-        // Notify the user's group that submission is successful and pending
         io.to(`group-${groupId}`).emit('submission_received', {
             groupRoomStatusId: groupStatus.id,
             roomId: groupStatus.roomId,
             status: groupStatus.status
         });
 
-        // Notify admins that a new submission is available
         io.to('admins').emit('new_submission_for_admin');
 
         res.json({
@@ -115,7 +106,6 @@ exports.submitAnswer = async (req, res) => {
 
     } catch (error) {
         console.error(`Error submitting answer for room ${roomId}:`, error);
-        // Clean up uploaded file in case of error
         if (req.file) {
             fs.unlinkSync(req.file.path);
         }
@@ -123,8 +113,7 @@ exports.submitAnswer = async (req, res) => {
     }
 };
 
-// POST /rooms/:groupRoomStatusId/claim-prize
-// Allows a user to see the available prizes after solving a puzzle.
+// POST /:groupRoomStatusId/claim-prize
 exports.claimPrize = async (req, res) => {
     const { groupRoomStatusId } = req.params;
     const { userId } = req.session;
@@ -140,17 +129,14 @@ exports.claimPrize = async (req, res) => {
 
         const currentStatus = await GroupRoomStatus.findByPk(groupRoomStatusId);
 
-        // Security check: ensure the status belongs to the user's group
         if (!currentStatus || currentStatus.groupId !== groupId) {
             return res.status(403).json({ message: 'دسترسی غیر مجاز.' });
         }
 
-        // Validation check
-        if (currentStatus.status !== 'corrected' || currentStatus.prizeClaimed) {
+        if (currentStatus.status !== 'corrected' && currentStatus.status !== 'deleted') {
             return res.status(400).json({ message: 'شما در حال حاضر نمی‌توانید جایزه دریافت کنید.' });
         }
 
-        // Find all room IDs that should be excluded from prize options
         const excludedStatuses = await GroupRoomStatus.findAll({
             where: {
                 groupId: groupId,
@@ -168,7 +154,6 @@ exports.claimPrize = async (req, res) => {
             if(s.chosenPrizeRoomId) excludedRoomIds.add(s.chosenPrizeRoomId);
         });
 
-        // Find up to 3 prize rooms: one from each difficulty, that is not excluded
         const prizeRooms = [];
         const difficulties = ['easy', 'medium', 'hard'];
 
@@ -178,7 +163,7 @@ exports.claimPrize = async (req, res) => {
                     id: { [Op.notIn]: Array.from(excludedRoomIds) },
                     difficulty: difficulty
                 },
-                order: sequelize.random(), // Pick a random one
+                order: sequelize.random(),
             });
             if (room) {
                 prizeRooms.push(room);
@@ -196,8 +181,7 @@ exports.claimPrize = async (req, res) => {
     }
 };
 
-// POST /rooms/:groupRoomStatusId/select-prize
-// Allows a user to select one of the available rooms as their prize.
+// POST /:groupRoomStatusId/select-prize
 exports.selectPrize = async (req, res) => {
     const { groupRoomStatusId } = req.params;
     const { chosenRoomId } = req.body;
@@ -219,11 +203,10 @@ exports.selectPrize = async (req, res) => {
 
         const groupStatus = await GroupRoomStatus.findByPk(groupRoomStatusId);
 
-        // Security and validation checks
         if (!groupStatus || groupStatus.groupId !== groupId) {
             return res.status(403).json({ message: 'دسترسی غیر مجاز.' });
         }
-        if (groupStatus.status !== 'corrected' || groupStatus.prizeClaimed) {
+        if (groupStatus.prizeClaimed) {
             return res.status(400).json({ message: 'امکان انتخاب جایزه برای این مورد وجود ندارد.' });
         }
 
@@ -232,14 +215,11 @@ exports.selectPrize = async (req, res) => {
             return res.status(404).json({ message: 'اتاق جایزه انتخاب شده معتبر نیست.' });
         }
 
-        // Ensure the group hasn't already attempted the prize room
         const isAttempted = await GroupRoomStatus.findOne({where: {groupId, roomId: chosenRoomId}});
         if(isAttempted){
             return res.status(400).json({ message: 'شما قبلا این اتاق را به عنوان جایزه انتخاب کرده یا در آن شرکت کرده‌اید.' });
         }
 
-
-        // Update the status with the chosen prize
         groupStatus.chosenPrizeRoomId = chosenRoomId;
         groupStatus.prizeClaimed = true;
         await groupStatus.save();
@@ -248,7 +228,6 @@ exports.selectPrize = async (req, res) => {
             attributes: ['name', 'roomNumber', 'password', 'uniqueIdentifier']
         });
 
-        // Notify the user's group that the prize has been selected
         io.to(`group-${groupId}`).emit('prize_selected', {
             groupRoomStatusId: groupStatus.id,
             prizeClaimed: groupStatus.prizeClaimed,
@@ -267,7 +246,6 @@ exports.selectPrize = async (req, res) => {
 };
 
 // POST /:groupRoomStatusId/delete
-// Allows a user's group to delete/cancel an unanswered puzzle.
 exports.deleteSubmission = async (req, res) => {
     const { groupRoomStatusId } = req.params;
     const { userId } = req.session;
@@ -284,7 +262,6 @@ exports.deleteSubmission = async (req, res) => {
 
         const groupStatus = await GroupRoomStatus.findByPk(groupRoomStatusId);
 
-        // Security and validation checks
         if (!groupStatus || groupStatus.groupId !== groupId) {
             return res.status(403).json({ message: 'دسترسی غیر مجاز.' });
         }
@@ -292,11 +269,9 @@ exports.deleteSubmission = async (req, res) => {
             return res.status(400).json({ message: 'فقط سوالات پاسخ داده نشده را می‌توان حذف کرد.' });
         }
 
-        // Update the status to 'deleted'
         groupStatus.status = 'deleted';
         await groupStatus.save();
 
-        // Notify the user's group
         io.to(`group-${groupId}`).emit('submission_deleted', {
             groupRoomStatusId: groupStatus.id,
             roomId: groupStatus.roomId,

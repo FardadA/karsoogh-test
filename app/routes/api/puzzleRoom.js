@@ -5,7 +5,6 @@ const path = require('path');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 
-// Configure Multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'public/uploads/');
@@ -18,7 +17,6 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  // Accept images and PDFs
   if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
     cb(null, true);
   } else {
@@ -34,13 +32,10 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-// Middleware to pass io object to the controller
 const ioMiddleware = (req, res, next) => {
   req.io = req.app.get('io');
   next();
 };
-
-// --- User-facing API Routes for Puzzle Rooms ---
 
 router.get('/:identifier', ioMiddleware, puzzleRoomController.renderRoom);
 router.post('/:roomId/submit-answer', ioMiddleware, upload.single('answerFile'), puzzleRoomController.submitAnswer);
