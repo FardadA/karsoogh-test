@@ -141,7 +141,7 @@ exports.claimPrize = async (req, res) => {
             where: {
                 groupId: groupId,
                 [Op.or]: [
-                    { status: ['pending_correction', 'corrected'] },
+                    { status: ['pending_correction', 'corrected', 'deleted'] },
                     { chosenPrizeRoomId: { [Op.ne]: null } }
                 ]
             },
