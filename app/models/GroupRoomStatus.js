@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
     },
     status: {
-      type: DataTypes.ENUM('unanswered', 'pending_correction', 'corrected'),
+      type: DataTypes.ENUM('unanswered', 'pending_correction', 'corrected', 'deleted'),
       defaultValue: 'unanswered',
       allowNull: false,
       comment: 'وضعیت پاسخ گروه در اتاق'

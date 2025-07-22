@@ -65,7 +65,13 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'unanswered':
                 puzzleRoomContent.innerHTML = createUnansweredView(room, status);
                 attachUploadListener(room, status);
+                attachDeleteListener(room, status);
                 break;
+            case 'deleted':
+                 puzzleRoomContent.innerHTML = createDeletedView(room, status);
+                 // Immediately trigger the prize claim process
+                 claimPrize(status);
+                 break;
             case 'pending_correction':
                 puzzleRoomContent.innerHTML = createPendingView(room, status);
                 break;
@@ -90,9 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="mt-8 text-center">
             <h3 class="text-xl font-bold mb-4">ارسال پاسخ</h3>
-            <form id="answer-upload-form">
-                <input type="file" name="answerFile" id="answer-file-input" class="input-field mb-4" required accept="image/*,application/pdf">
-                <button type="submit" class="btn-primary w-full md:w-auto">ارسال فایل</button>
+            <form id="answer-upload-form" class="flex items-center justify-center space-x-2 space-x-reverse">
+                <input type="file" name="answerFile" id="answer-file-input" class="input-field" required accept="image/*,application/pdf">
+                <button type="submit" class="btn-primary">ارسال فایل</button>
+                <button type="button" id="delete-submission-btn" class="btn-secondary bg-orange-600 hover:bg-orange-700">حذف</button>
             </form>
         </div>
     `;
@@ -198,24 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const attachClaimPrizeListener = (room, status) => {
         const btn = document.getElementById('claim-prize-btn');
-        btn.addEventListener('click', async () => {
-            window.setLoadingState(true);
-            try {
-                const response = await axios.post(`/api/puzzle-room/${status.id}/claim-prize`);
-                const prizeSection = document.getElementById('prize-section');
-                if (response.data.prizeOptions && response.data.prizeOptions.length > 0) {
-                    // Replace the entire section content with the prize selection view
-                    prizeSection.innerHTML = createPrizeSelectionView(response.data.prizeOptions, status);
-                    attachSelectPrizeListeners(status);
-                } else {
-                    prizeSection.innerHTML = `<p class="text-center text-yellow-400 mt-4">متاسفانه در حال حاضر جایزه‌ای برای شما وجود ندارد. بعدا تلاش کنید!</p>`;
-                }
-            } catch (error) {
-                window.sendNotification('error', error.response?.data?.message || 'خطا در درخواست جایزه.');
-            } finally {
-                window.setLoadingState(false);
-            }
-        });
+        btn.addEventListener('click', () => claimPrize(status));
     };
 
     const attachSelectPrizeListeners = (originalStatus) => {
@@ -245,15 +235,69 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const createDeletedView = (room, status) => `
+        <div class="text-center bg-gray-800 p-8 rounded-lg">
+            <i class="fas fa-trash-alt text-5xl text-orange-500 mb-4"></i>
+            <h3 class="text-2xl font-bold">شما از این سوال انصراف دادید.</h3>
+            <p class="text-gray-300 mt-2">امتیازی برای شما ثبت نشد، اما می‌توانید جایزه خود را برای ورود به اتاق بعدی انتخاب کنید.</p>
+        </div>
+        <div class="mt-8 text-center border-t-2 border-gray-700 pt-6" id="prize-section">
+            <div class="w-8 h-8 border-t-2 border-blue-500 rounded-full animate-spin mx-auto"></div>
+            <p class="mt-2">در حال آماده‌سازی جایزه...</p>
+        </div>
+    `;
+
+    const attachDeleteListener = (room, status) => {
+        const btn = document.getElementById('delete-submission-btn');
+        btn.addEventListener('click', () => {
+            window.sendConfirmationNotification('confirm', 'آیا از حذف این سوال مطمئن هستید؟ در صورت حذف، شانسی برای کسب امتیاز آن نخواهید داشت.', async (confirmed) => {
+                if (confirmed) {
+                    window.setLoadingState(true);
+                    try {
+                        const response = await axios.post(`/api/puzzle-room/${status.id}/delete`);
+                        renderPuzzleRoom(room, response.data.status);
+                    } catch (error) {
+                        window.sendNotification('error', error.response?.data?.message || 'خطا در حذف سوال.');
+                    } finally {
+                        window.setLoadingState(false);
+                    }
+                }
+            });
+        });
+    };
+
+    // This function is now separated to be callable from different states
+    const claimPrize = async (status) => {
+        window.setLoadingState(true);
+        try {
+            const response = await axios.post(`/api/puzzle-room/${status.id}/claim-prize`);
+            const prizeSection = document.getElementById('prize-section');
+            if (prizeSection && response.data.prizeOptions && response.data.prizeOptions.length > 0) {
+                prizeSection.innerHTML = createPrizeSelectionView(response.data.prizeOptions, status);
+                attachSelectPrizeListeners(status);
+            } else if (prizeSection) {
+                prizeSection.innerHTML = `<p class="text-center text-yellow-400 mt-4">متاسفانه در حال حاضر جایزه‌ای برای شما وجود ندارد. بعدا تلاش کنید!</p>`;
+            }
+        } catch (error) {
+            window.sendNotification('error', error.response?.data?.message || 'خطا در درخواست جایزه.');
+        } finally {
+            window.setLoadingState(false);
+        }
+    }
+
 
     // --- Socket Handlers ---
 
     window.socket.on('submission_corrected', (data) => {
-        // Check if the update is for the currently viewed room
         if (currentRoomData && currentRoomData.status.id === data.groupRoomStatusId) {
              showAlert('success', 'پاسخ شما تصحیح شد! صفحه بروزرسانی می‌شود.');
-             // Refetch data to get the most up-to-date status
              fetchAndRenderPuzzleRoom(currentRoomData.room.uniqueIdentifier);
+        }
+    });
+
+    window.socket.on('submission_deleted', (data) => {
+        if (currentRoomData && currentRoomData.status.id === data.groupRoomStatusId) {
+            fetchAndRenderPuzzleRoom(currentRoomData.room.uniqueIdentifier);
         }
     });
 

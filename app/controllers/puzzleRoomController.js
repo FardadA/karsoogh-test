@@ -265,3 +265,51 @@ exports.selectPrize = async (req, res) => {
         res.status(500).json({ message: 'خطا در انتخاب جایزه.' });
     }
 };
+
+// POST /:groupRoomStatusId/delete
+// Allows a user's group to delete/cancel an unanswered puzzle.
+exports.deleteSubmission = async (req, res) => {
+    const { groupRoomStatusId } = req.params;
+    const { userId } = req.session;
+    const io = req.io;
+
+    try {
+        const user = await sequelize.models.User.findByPk(userId, {
+            include: [{ model: Group, as: 'groups' }]
+        });
+        if (!user || !user.groups || user.groups.length === 0) {
+            return res.status(403).json({ message: 'برای این عملیات باید عضو یک گروه باشید.' });
+        }
+        const groupId = user.groups[0].id;
+
+        const groupStatus = await GroupRoomStatus.findByPk(groupRoomStatusId);
+
+        // Security and validation checks
+        if (!groupStatus || groupStatus.groupId !== groupId) {
+            return res.status(403).json({ message: 'دسترسی غیر مجاز.' });
+        }
+        if (groupStatus.status !== 'unanswered') {
+            return res.status(400).json({ message: 'فقط سوالات پاسخ داده نشده را می‌توان حذف کرد.' });
+        }
+
+        // Update the status to 'deleted'
+        groupStatus.status = 'deleted';
+        await groupStatus.save();
+
+        // Notify the user's group
+        io.to(`group-${groupId}`).emit('submission_deleted', {
+            groupRoomStatusId: groupStatus.id,
+            roomId: groupStatus.roomId,
+            status: groupStatus.status
+        });
+
+        res.json({
+            message: 'سوال با موفقیت حذف شد.',
+            status: groupStatus
+        });
+
+    } catch (error) {
+        console.error(`Error deleting submission ${groupRoomStatusId}:`, error);
+        res.status(500).json({ message: 'خطا در حذف سوال.' });
+    }
+};

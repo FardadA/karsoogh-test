@@ -46,5 +46,6 @@ router.get('/:identifier', ioMiddleware, puzzleRoomController.renderRoom);
 router.post('/:roomId/submit-answer', ioMiddleware, upload.single('answerFile'), puzzleRoomController.submitAnswer);
 router.post('/:groupRoomStatusId/claim-prize', ioMiddleware, puzzleRoomController.claimPrize);
 router.post('/:groupRoomStatusId/select-prize', ioMiddleware, puzzleRoomController.selectPrize);
+router.post('/:groupRoomStatusId/delete', ioMiddleware, puzzleRoomController.deleteSubmission);
 
 module.exports = router;
