@@ -12,7 +12,8 @@ new Vue({
     adminRadioMixin,
     adminQuestionBankMixin, // Added Question Bank Mixin
     adminGameManagementMixin, // New Mixin for Territory Defense Game Management
-    adminPuzzleRoomMixin // --- ADDED PUZZLE ROOM MIXIN ---
+    adminPuzzleRoomMixin, // --- ADDED PUZZLE ROOM MIXIN ---
+    adminChannelsMixin
   ],
   data: {
     editingId: null,
@@ -31,7 +32,8 @@ new Vue({
       { key: 'question_bank_correction', label: 'تصحیح سوالات (بانک سوال)' },
       { key: 'question_bank_settings', label: 'تنظیمات بانک سوال' },
       { key: 'features', label: 'مدیریت رویدادها' },
-      { key: 'radio', label: 'رادیو' }
+      { key: 'radio', label: 'رادیو' },
+      { key: 'channels', label: 'کانال‌ها و پیام‌ها' }
     ],
     // userRole will be determined in created/mounted based on session or an API call if needed
     // For now, we assume `isAdminUser` computed property will handle admin-specific UI.

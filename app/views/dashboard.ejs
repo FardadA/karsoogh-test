@@ -92,6 +92,7 @@
              { id:'ammunition_store', label:'فروشگاه مهمات', icon:'cubes' }, // Changed icon to fa-cubes
              { id:'scoreboard',label:'جدول امتیازات', icon:'list-ol' },
              { id:'announcements',label:'اطلاعیه‌ها', icon:'bullhorn' },
+             { id:'messages',label:'پیام‌ها', icon:'envelope' },
              { id:'radio',     label:'رادیو', icon:'broadcast-tower' }
            ];
         %>
@@ -244,6 +245,12 @@
       <section id="ammunition_store" class="content-section hidden">
           <div id="game-ammunition-content" class="text-gray-300"></div>
       </section>
+
+      <section id="messages" class="content-section hidden">
+        <div id="messages-list" class="space-y-4 text-gray-300">
+          <p class="text-gray-400 text-center py-6">در حال بارگذاری پیام‌ها…</p>
+        </div>
+      </section>
       </main>
   </div>
 
@@ -265,5 +272,6 @@
   <script src="/js/game-territory.js"></script>
   <script src="/js/game-ammunition.js"></script>
   <script src="/js/puzzle-room.js"></script>
+  <script src="/js/messages.js"></script>
   </body>
 </html>

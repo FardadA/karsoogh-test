@@ -69,6 +69,13 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'groupId',
       as: 'puzzleRoomStatuses'
     });
+
+    Group.belongsToMany(models.Channel, {
+      through: 'ChannelGroup',
+      as: 'channels',
+      foreignKey: 'groupId',
+      otherKey: 'channelId'
+    });
   };
 
   return Group;

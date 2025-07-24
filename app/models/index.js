@@ -38,6 +38,8 @@ db.QuestionBankSetting     = require('./questionBankSetting')(sequelize, DataTyp
 db.Question                = require('./question')(sequelize, DataTypes);
 db.PurchasedQuestion       = require('./purchasedQuestion')(sequelize, DataTypes);
 db.SubmittedCombo          = require('./submittedCombo')(sequelize, DataTypes);
+db.Channel                 = require('./channel.model')(sequelize, DataTypes);
+db.Message                 = require('./message.model')(sequelize, DataTypes);
 
 // Game Models
 db.GameMap                 = require('./GameMap')(sequelize, DataTypes);

@@ -1076,6 +1076,77 @@
         </div>
       </section>
 
+      <section id="channels" v-show="activeSection==='channels'" class="content-section" :class="{'active fade-in': activeSection==='channels'}">
+        <h2 class="text-2xl font-bold mb-4">مدیریت کانال‌ها و پیام‌ها</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <h3 class="text-xl font-semibold mb-4">لیست کانال‌ها</h3>
+                <button @click="openCreateChannelForm" class="btn-primary px-4 py-2 mb-4">ایجاد کانال جدید</button>
+                <table class="min-w-full bg-gray-700 rounded overflow-hidden text-sm">
+                    <thead>
+                        <tr class="bg-gray-800 text-gray-300">
+                            <th>#</th>
+                            <th>نام کانال</th>
+                            <th>تعداد گروه‌ها</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(channel, idx) in channels" :key="channel.id" class="border-b border-gray-600 hover:bg-gray-600">
+                            <td class="px-2 py-1 text-center">{{ idx + 1 }}</td>
+                            <td class="px-2">{{ channel.name }}</td>
+                            <td class="px-2 text-center">{{ channel.groups.length }}</td>
+                            <td class="px-2 text-center">
+                                <button @click="openEditChannelForm(channel)" class="btn-secondary px-2 py-1 text-sm">ویرایش</button>
+                                <button @click="deleteChannel(channel)" class="btn-primary px-2 py-1 text-sm">حذف</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <h3 class="text-xl font-semibold mb-4">ارسال پیام جدید</h3>
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <div class="mb-4">
+                        <label for="channelSelect" class="block text-sm font-medium text-gray-300 mb-1">انتخاب کانال</label>
+                        <select id="channelSelect" v-model="newMessage.channelId" class="input-field w-full">
+                            <option value="">-- یک کانال انتخاب کنید --</option>
+                            <option v-for="channel in channels" :key="channel.id" :value="channel.id">{{ channel.name }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="messageContent" class="block text-sm font-medium text-gray-300 mb-1">متن پیام</label>
+                        <textarea id="messageContent" v-model="newMessage.content" rows="4" class="input-field w-full" placeholder="پیام خود را اینجا بنویسید..."></textarea>
+                    </div>
+                    <button @click="sendMessageToChannel" class="btn-primary w-full py-2">ارسال پیام</button>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="showChannelForm" class="modal-backdrop">
+            <div class="modal-content">
+                <h3 class="text-xl font-bold mb-4">{{ editingChannelId ? 'ویرایش کانال' : 'ایجاد کانال جدید' }}</h3>
+                <div class="mb-4">
+                    <label for="channelName" class="block text-sm font-medium text-gray-300 mb-1">نام کانال</label>
+                    <input id="channelName" v-model="channelForm.name" class="input-field w-full">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-1">انتخاب گروه‌ها</label>
+                    <div class="max-h-60 overflow-y-auto bg-gray-900 p-2 rounded border border-gray-600">
+                        <div v-for="group in groupsForSelection" :key="group.id" class="flex items-center my-1">
+                            <input type="checkbox" :id="'group-' + group.id" :value="group.id" v-model="channelForm.groupIds" class="ml-2">
+                            <label :for="'group-' + group.id">{{ group.name }} <span class="text-xs text-gray-400">{{ getGroupChannelInfo(group) }}</span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 mt-6">
+                    <button @click="closeChannelForm" class="btn-secondary px-4 py-2">انصراف</button>
+                    <button @click="saveChannel" class="btn-primary px-4 py-2">{{ editingChannelId ? 'ذخیره' : 'ایجاد' }}</button>
+                </div>
+            </div>
+        </div>
+      </section>
+
       </div>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
@@ -1091,6 +1162,7 @@
   <script src="/js/admin-question-bank-mixin.js"></script> <!-- Added Question Bank Mixin -->
   <script src="/js/admin-game-management-mixin.js"></script> <!-- New Game Management Mixin -->
   <script src="/js/admin-puzzle-room-mixin.js"></script> <!-- Added Puzzle Room Mixin -->
+  <script src="/js/adminChannelsMixin.js"></script>
   <script src="/js/admin.js"></script>
 
 </body>

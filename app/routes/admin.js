@@ -30,5 +30,8 @@ module.exports = (io) => {
 
   router.use('/api/features', require('./adminFeatures'));
 
+  // Channel routes
+  router.use('/api/channels', require('./channels')(io));
+
   return router;
 };
