@@ -122,7 +122,7 @@ const adminChannelsMixin = {
         },
         getGroupChannelInfo(group) {
             if (group.channels && group.channels.length > 0) {
-                return `(عضو در: ${group.channels.map(c => c.name).join(', ')})`;
+                return group.channels.map(c => c.name).join(', ');
             }
             return '';
         }

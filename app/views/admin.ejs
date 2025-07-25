@@ -1155,11 +1155,16 @@
                     <input id="channelName" v-model="channelForm.name" class="input-field w-full">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-300 mb-1">انتخاب گروه‌ها</label>
-                    <div class="max-h-60 overflow-y-auto bg-gray-900 p-2 rounded border border-gray-600">
-                        <div v-for="group in groupsForSelection" :key="group.id" class="flex items-center my-1">
-                            <input type="checkbox" :id="'group-' + group.id" :value="group.id" v-model="channelForm.groupIds" class="ml-2">
-                            <label :for="'group-' + group.id">{{ group.name }} <span class="text-xs text-gray-400">{{ getGroupChannelInfo(group) }}</span></label>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">انتخاب گروه‌ها</label>
+                    <div class="max-h-64 overflow-y-auto bg-gray-900/50 p-3 rounded-lg border border-gray-600 space-y-2">
+                        <div v-for="group in groupsForSelection" :key="group.id" class="flex items-center justify-between p-2 rounded-md hover:bg-gray-700/50 transition-colors">
+                            <label :for="'group-' + group.id" class="flex items-center cursor-pointer">
+                                <input type="checkbox" :id="'group-' + group.id" :value="group.id" v-model="channelForm.groupIds" class="h-5 w-5 rounded bg-gray-600 border-gray-500 text-blue-500 focus:ring-blue-400 ml-3">
+                                <span class="font-semibold">{{ group.name }}</span>
+                            </label>
+                            <span v-if="getGroupChannelInfo(group)" class="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded-full">
+                                {{ getGroupChannelInfo(group) }}
+                            </span>
                         </div>
                     </div>
                 </div>
