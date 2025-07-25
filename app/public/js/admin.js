@@ -173,6 +173,10 @@ new Vue({
             case 'radio':
                 // No specific data to load initially for radio, it's event-driven
                 break;
+            case 'channels':
+                await this.fetchChannels();
+                await this.fetchGroupsForSelection();
+                break;
         }
         this.setLoadingState(false);
     }

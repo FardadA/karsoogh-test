@@ -20,7 +20,7 @@ const adminChannelsMixin = {
                     this.channels = response.data;
                 })
                 .catch(error => {
-                    this.showAlert('خطا در دریافت لیست کانال‌ها', 'error');
+                    this.sendNotification('error', 'خطا در دریافت لیست کانال‌ها');
                 });
         },
         fetchGroupsForSelection() {
@@ -29,7 +29,7 @@ const adminChannelsMixin = {
                     this.groupsForSelection = response.data;
                 })
                 .catch(error => {
-                    this.showAlert('خطا در دریافت لیست گروه‌ها', 'error');
+                    this.sendNotification('error', 'خطا در دریافت لیست گروه‌ها');
                 });
         },
         openCreateChannelForm() {
@@ -54,38 +54,38 @@ const adminChannelsMixin = {
 
             axios[method](url, this.channelForm)
                 .then(() => {
-                    this.showAlert('کانال با موفقیت ذخیره شد', 'success');
+                    this.sendNotification('success', 'کانال با موفقیت ذخیره شد');
                     this.fetchChannels();
                     this.closeChannelForm();
                 })
                 .catch(error => {
-                    this.showAlert('خطا در ذخیره کانال', 'error');
+                    this.sendNotification('error', 'خطا در ذخیره کانال');
                 });
         },
         deleteChannel(channel) {
             if (confirm(`آیا از حذف کانال "${channel.name}" اطمینان دارید؟`)) {
                 axios.delete(`/admin/api/channels/${channel.id}`)
                     .then(() => {
-                        this.showAlert('کانال با موفقیت حذف شد', 'success');
+                        this.sendNotification('success', 'کانال با موفقیت حذف شد');
                         this.fetchChannels();
                     })
                     .catch(error => {
-                        this.showAlert('خطا در حذف کانال', 'error');
+                        this.sendNotification('error', 'خطا در حذف کانال');
                     });
             }
         },
         sendMessageToChannel() {
             if (!this.newMessage.channelId || !this.newMessage.content) {
-                this.showAlert('لطفاً کانال و متن پیام را وارد کنید', 'warning');
+                this.sendNotification('warning', 'لطفاً کانال و متن پیام را وارد کنید');
                 return;
             }
             axios.post('/admin/api/channels/messages', this.newMessage)
                 .then(() => {
-                    this.showAlert('پیام با موفقیت ارسال شد', 'success');
+                    this.sendNotification('success', 'پیام با موفقیت ارسال شد');
                     this.newMessage.content = '';
                 })
                 .catch(error => {
-                    this.showAlert('خطا در ارسال پیام', 'error');
+                    this.sendNotification('error', 'خطا در ارسال پیام');
                 });
         },
         getGroupChannelInfo(group) {
