@@ -287,6 +287,7 @@ async function seedFeatureFlags() {
     { name: 'menu_question_bank', displayName: 'منوی بانک سوال', isEnabled: true, category: 'menu' },
     { name: 'menu_territory_defense', displayName: 'منوی دفاع از قلمرو', isEnabled: true, category: 'menu' },
     { name: 'menu_ammunition_store', displayName: 'منوی فروشگاه مهمات', isEnabled: true, category: 'menu' },
+    { name: 'menu_messages', displayName: 'منوی پیام‌ها', isEnabled: true, category: 'menu' },
     { name: 'action_group_leave', displayName: 'عملیات خروج از گروه', isEnabled: true, category: 'action' },
     { name: 'action_group_delete', displayName: 'عملیات حذف گروه (توسط سرگروه)', isEnabled: true, category: 'action' },
     // Feature flag for admin panel section
