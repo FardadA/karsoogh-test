@@ -176,6 +176,7 @@ new Vue({
             case 'channels':
                 if (typeof this.fetchChannels === 'function') await this.fetchChannels();
                 if (typeof this.fetchGroupsForSelection === 'function') await this.fetchGroupsForSelection();
+                if (typeof this.fetchMembershipMatrix === 'function') await this.fetchMembershipMatrix();
                 break;
         }
         this.setLoadingState(false);

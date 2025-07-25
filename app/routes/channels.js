@@ -19,5 +19,8 @@ module.exports = (io) => {
     router.post('/messages', ctrl.sendMessage);
     router.get('/groups', ctrl.listGroups);
 
+    router.get('/membership-matrix', ctrl.getMembershipMatrix);
+    router.post('/membership', ctrl.updateMembership);
+
     return router;
 };

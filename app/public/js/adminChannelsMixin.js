@@ -11,6 +11,10 @@ const adminChannelsMixin = {
         newMessage: {
             channelId: '',
             content: ''
+        },
+        membershipMatrix: {
+            groups: [],
+            channels: []
         }
     },
     methods: {
@@ -22,6 +26,34 @@ const adminChannelsMixin = {
                 .catch(error => {
                     this.sendNotification('error', 'خطا در دریافت لیست کانال‌ها');
                 });
+        },
+        fetchMembershipMatrix() {
+            axios.get('/admin/api/channels/membership-matrix')
+                .then(response => {
+                    this.membershipMatrix = response.data;
+                })
+                .catch(error => {
+                    this.sendNotification('error', 'خطا در دریافت اطلاعات عضویت');
+                });
+        },
+        isMember(group, channelId) {
+            return group.channels.some(c => c.id === channelId);
+        },
+        updateMembership(group, channelId, event) {
+            const isMember = event.target.checked;
+            axios.post('/admin/api/channels/membership', {
+                groupId: group.id,
+                channelId,
+                isMember
+            })
+            .then(() => {
+                this.sendNotification('success', 'عضویت با موفقیت به‌روزرسانی شد');
+                this.fetchMembershipMatrix(); // Refresh the matrix data
+            })
+            .catch(error => {
+                this.sendNotification('error', 'خطا در به‌روزرسانی عضویت');
+                event.target.checked = !isMember; // Revert the checkbox on error
+            });
         },
         fetchGroupsForSelection() {
             return axios.get('/admin/api/channels/groups')
@@ -98,5 +130,6 @@ const adminChannelsMixin = {
     created() {
         this.fetchChannels();
         this.fetchGroupsForSelection();
+        this.fetchMembershipMatrix();
     }
 };

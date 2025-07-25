@@ -109,4 +109,49 @@ exports.listGroups = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'خطا در دریافت لیست گروه‌ها', error });
     }
-}
+};
+
+exports.getMembershipMatrix = async (req, res) => {
+    try {
+        const groups = await Group.findAll({
+            attributes: ['id', 'name'],
+            include: [{
+                model: Channel,
+                as: 'channels',
+                attributes: ['id'],
+                through: { attributes: [] } // Don't include the pivot table
+            }],
+            order: [['name', 'ASC']]
+        });
+        const channels = await Channel.findAll({
+            attributes: ['id', 'name'],
+            order: [['name', 'ASC']]
+        });
+
+        res.json({ groups, channels });
+    } catch (error) {
+        res.status(500).json({ message: 'خطا در دریافت اطلاعات عضویت', error });
+    }
+};
+
+exports.updateMembership = async (req, res) => {
+    try {
+        const { groupId, channelId, isMember } = req.body;
+        const group = await Group.findByPk(groupId);
+        const channel = await Channel.findByPk(channelId);
+
+        if (!group || !channel) {
+            return res.status(404).json({ message: 'گروه یا کانال یافت نشد' });
+        }
+
+        if (isMember) {
+            await group.addChannel(channel);
+        } else {
+            await group.removeChannel(channel);
+        }
+
+        res.status(200).json({ message: 'عضویت با موفقیت به‌روزرسانی شد' });
+    } catch (error) {
+        res.status(500).json({ message: 'خطا در به‌روزرسانی عضویت', error });
+    }
+};
