@@ -15,7 +15,7 @@ const adminChannelsMixin = {
     },
     methods: {
         fetchChannels() {
-            axios.get('/admin/api/channels')
+            return axios.get('/admin/api/channels')
                 .then(response => {
                     this.channels = response.data;
                 })
@@ -24,7 +24,7 @@ const adminChannelsMixin = {
                 });
         },
         fetchGroupsForSelection() {
-            axios.get('/admin/api/channels/groups')
+            return axios.get('/admin/api/channels/groups')
                 .then(response => {
                     this.groupsForSelection = response.data;
                 })
