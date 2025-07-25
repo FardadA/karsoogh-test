@@ -85,8 +85,6 @@ document.addEventListener('DOMContentLoaded', function(){
              // Try to get title from the section itself if it has one, or default
             pageTitle.textContent = nextSectionToShow.dataset.pageTitle || id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
-
-        loadSectionData(id);
     }
 
     window.showSection = showSection; // Expose globally if needed by other scripts
@@ -131,7 +129,6 @@ document.addEventListener('DOMContentLoaded', function(){
                     else i.classList.remove('active');
                 });
                 pageTitle.textContent = firstVisibleMenuItem.innerText.trim();
-                loadSectionData(sectionId); // Load data for the initial section
             } else {
                 console.warn(`Default section element with id "${sectionId}" not found.`);
                  // Fallback to the very first item in the list if its section exists
@@ -164,67 +161,6 @@ document.addEventListener('DOMContentLoaded', function(){
     // Initial setup
     updateMenuItems(); // Populate and attach listeners
     initializeActiveTab(); // Set the first visible tab
-
-    function loadSectionData(sectionId) {
-        setLoadingState(true);
-
-        let promise;
-
-        switch (sectionId) {
-            case 'dashboard':
-                promise = Promise.all([
-                    // Assuming you have functions that return promises
-                    // e.g., fetchDashboardStats(), fetchLatestAnnouncement()
-                ]);
-                break;
-            case 'training':
-                promise = fetchTrainingContent(); // Assuming this returns a promise
-                break;
-            case 'groups':
-                promise = fetchGroupInfo(); // Assuming this returns a promise
-                break;
-            case 'bank':
-                promise = fetchBankData(); // Assuming this returns a promise
-                break;
-            case 'shop':
-                promise = fetchShopItems(); // Assuming this returns a promise
-                break;
-            case 'question_bank':
-                promise = fetchQuestionBankData(); // Assuming this returns a promise
-                break;
-            case 'territory_defense':
-                promise = fetchTerritoryDefenseData(); // Assuming this returns a promise
-                break;
-            case 'ammunition_store':
-                promise = fetchAmmunitionStoreData(); // Assuming this returns a promise
-                break;
-            case 'scoreboard':
-                promise = fetchScoreboard(); // Assuming this returns a promise
-                break;
-            case 'announcements':
-                promise = fetchAnnouncements(); // Assuming this returns a promise
-                break;
-            case 'messages':
-                promise = fetchMessages();
-                break;
-            case 'radio':
-                promise = Promise.resolve(); // No data to load
-                break;
-            default:
-                promise = Promise.resolve();
-        }
-
-        promise.finally(() => {
-            setLoadingState(false);
-        });
-    }
-
-    document.getElementById('btn-refresh').addEventListener('click', () => {
-        const activeSection = document.querySelector('.content-section.active');
-        if (activeSection) {
-            loadSectionData(activeSection.id);
-        }
-    });
 
     // Optional: Re-initialize if feature flags cause DOM changes for menu items later
     // This would require 'feature-flags-loaded' event to be reliable and possibly a delay
