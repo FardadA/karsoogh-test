@@ -166,8 +166,7 @@ document.addEventListener('DOMContentLoaded', function(){
     initializeActiveTab(); // Set the first visible tab
 
     function loadSectionData(sectionId) {
-        const spinner = document.getElementById('loading-spinner');
-        spinner.classList.remove('hidden');
+        setLoadingState(true);
 
         let promise;
 
@@ -181,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function(){
         }
 
         promise.finally(() => {
-            spinner.classList.add('hidden');
+            setLoadingState(false);
         });
     }
 
