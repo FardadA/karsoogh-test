@@ -131,6 +131,7 @@ document.addEventListener('DOMContentLoaded', function(){
                     else i.classList.remove('active');
                 });
                 pageTitle.textContent = firstVisibleMenuItem.innerText.trim();
+                loadSectionData(sectionId); // Load data for the initial section
             } else {
                 console.warn(`Default section element with id "${sectionId}" not found.`);
                  // Fallback to the very first item in the list if its section exists
