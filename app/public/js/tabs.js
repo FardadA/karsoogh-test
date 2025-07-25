@@ -171,10 +171,45 @@ document.addEventListener('DOMContentLoaded', function(){
         let promise;
 
         switch (sectionId) {
+            case 'dashboard':
+                promise = Promise.all([
+                    // Assuming you have functions that return promises
+                    // e.g., fetchDashboardStats(), fetchLatestAnnouncement()
+                ]);
+                break;
+            case 'training':
+                promise = fetchTrainingContent(); // Assuming this returns a promise
+                break;
+            case 'groups':
+                promise = fetchGroupInfo(); // Assuming this returns a promise
+                break;
+            case 'bank':
+                promise = fetchBankData(); // Assuming this returns a promise
+                break;
+            case 'shop':
+                promise = fetchShopItems(); // Assuming this returns a promise
+                break;
+            case 'question_bank':
+                promise = fetchQuestionBankData(); // Assuming this returns a promise
+                break;
+            case 'territory_defense':
+                promise = fetchTerritoryDefenseData(); // Assuming this returns a promise
+                break;
+            case 'ammunition_store':
+                promise = fetchAmmunitionStoreData(); // Assuming this returns a promise
+                break;
+            case 'scoreboard':
+                promise = fetchScoreboard(); // Assuming this returns a promise
+                break;
+            case 'announcements':
+                promise = fetchAnnouncements(); // Assuming this returns a promise
+                break;
             case 'messages':
                 promise = fetchMessages();
                 break;
-            // Add other cases here for other sections
+            case 'radio':
+                promise = Promise.resolve(); // No data to load
+                break;
             default:
                 promise = Promise.resolve();
         }
