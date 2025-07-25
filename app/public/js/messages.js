@@ -21,7 +21,7 @@ function renderMessages(messages) {
 }
 
 function fetchMessages() {
-    axios.get('/api/messages')
+    return axios.get('/api/messages')
         .then(response => {
             renderMessages(response.data);
         })
@@ -30,6 +30,7 @@ function fetchMessages() {
             if (container) {
                 container.innerHTML = '<p class="text-red-400 text-center py-6">خطا در بارگذاری پیام‌ها.</p>';
             }
+            throw error; // Re-throw the error to be caught by the caller's .catch or .finally
         });
 }
 

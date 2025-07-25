@@ -42,14 +42,10 @@ document.addEventListener('DOMContentLoaded', function(){
 
     function showSection(id){
         const currentActiveSection = document.querySelector('.content-section.active');
-        // --- DEBUG ---
-        console.log(`Trying to find section with id: "${id}"`);
         const nextSectionToShow    = document.getElementById(id);
-        console.log(`Element found for id "${id}":`, nextSectionToShow);
-        // --- END DEBUG ---
 
         if (!nextSectionToShow) {
-            console.warn(`Section with id "${id}" not found.`); // This is the original warning line
+            console.warn(`Section with id "${id}" not found.`);
             return;
         }
         if (currentActiveSection && currentActiveSection.id === id) return; // Already active
@@ -89,6 +85,8 @@ document.addEventListener('DOMContentLoaded', function(){
              // Try to get title from the section itself if it has one, or default
             pageTitle.textContent = nextSectionToShow.dataset.pageTitle || id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
+
+        loadSectionData(id);
     }
 
     window.showSection = showSection; // Expose globally if needed by other scripts
@@ -165,6 +163,33 @@ document.addEventListener('DOMContentLoaded', function(){
     // Initial setup
     updateMenuItems(); // Populate and attach listeners
     initializeActiveTab(); // Set the first visible tab
+
+    function loadSectionData(sectionId) {
+        const spinner = document.getElementById('loading-spinner');
+        spinner.classList.remove('hidden');
+
+        let promise;
+
+        switch (sectionId) {
+            case 'messages':
+                promise = fetchMessages();
+                break;
+            // Add other cases here for other sections
+            default:
+                promise = Promise.resolve();
+        }
+
+        promise.finally(() => {
+            spinner.classList.add('hidden');
+        });
+    }
+
+    document.getElementById('btn-refresh').addEventListener('click', () => {
+        const activeSection = document.querySelector('.content-section.active');
+        if (activeSection) {
+            loadSectionData(activeSection.id);
+        }
+    });
 
     // Optional: Re-initialize if feature flags cause DOM changes for menu items later
     // This would require 'feature-flags-loaded' event to be reliable and possibly a delay
